@@ -1,6 +1,11 @@
+namespace ExpenseGuard.Api.Models;
+
 public class Department
 {
-    public int dept_id { get; set; }
-    public string dept_name { get; set; }
-    
+    public int DepartmentId { get; set; }
+    public string DepartmentName { get; set; } = string.Empty;
+
+    public ICollection<Employee> Employees { get; set; } = [];
+    public ICollection<Policy> Policies { get; set; } = [];
+    public ICollection<Budget> Budgets { get; set; } = [];
 }

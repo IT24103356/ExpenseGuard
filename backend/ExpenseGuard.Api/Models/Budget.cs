@@ -1,8 +1,12 @@
+namespace ExpenseGuard.Api.Models;
+
 public class Budget
 {
-    public int budget_id { get; set; }
-    public string dept_id { get; set; }
-    public decimal allocated_amount { get; set; }
-    public DateTime period { get; set; }
-    public string spent_amount { get; set; }
+    public int BudgetId { get; set; }
+    public int DepartmentId { get; set; }
+    public string Period { get; set; } = string.Empty;
+    public decimal AllocatedAmount { get; set; }
+    public decimal SpentAmount { get; set; }
+
+    public Department Department { get; set; } = null!;
 }

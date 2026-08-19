@@ -1,16 +1,22 @@
+namespace ExpenseGuard.Api.Models;
+
 public class ExpenseClaim
 {
-    public int claim_id { get; set; }
-    public int emp_id { get; set; }
-    public varchar catagory { get; set; }
-    public decimal amount { get; set; }
-    public DateTime date { get; set; }
-    public varchar purchase_no { get; set; }
-    public varchar status { get; set; }
-    public text receipt_img { get; set; }
-    public text receipt_doc {get; set;}
-    public DateTime created_at { get; set; }
-    public DateTime updated_at { get; set; }
-    public DateTime deleted_at { get; set; }
-    public DateTime submitted_at { get; set; }
+    public int ExpenseClaimId { get; set; }
+    public int EmployeeId { get; set; }
+    public decimal Amount { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public string Status { get; set; } = "draft";
+    public string PurchaseNo { get; set; } = string.Empty;
+    public DateTime? PurchaseDate { get; set; }
+    public string? ReceiptImg { get; set; }
+    public string? ReceiptDoc { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? DeletedAt { get; set; }
+
+    public Employee Employee { get; set; } = null!;
+    public ICollection<FraudFlag> FraudFlags { get; set; } = [];
+    public Reimbursement? Reimbursement { get; set; }
 }
