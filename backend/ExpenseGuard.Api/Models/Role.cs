@@ -1,7 +1,11 @@
-public class Role{
-    public int role_id { get; set; }
-    public varchar role_name { get; set; }
-    public numeric approval_limit { get; set; }
-    public boolean can_approve { get; set; }
-   
+namespace ExpenseGuard.Api.Models;
+
+public class Role
+{
+    public int RoleId { get; set; }
+    public string RoleName { get; set; } = string.Empty;
+    public decimal ApprovalLimit { get; set; }
+    public bool CanApprove { get; set; }
+
+    public ICollection<Employee> Employees { get; set; } = [];
 }
