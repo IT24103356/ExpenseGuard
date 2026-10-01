@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="ExpenseGuard.Api/ExpenseGuard.Api.csproj" />
+  <Project Path="ReimbursementBudget.API/ReimbursementBudget.API.csproj" />
+  <Project Path="ReimbursementBudget.Tests/ReimbursementBudget.Tests.csproj" />
 </Solution>
