@@ -13,6 +13,7 @@ class MyClaimsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('My Claims', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(tooltip: 'Expense intake', icon: const Icon(Icons.receipt_long), onPressed: () => context.go('/intake')),
           IconButton(icon: const Icon(Icons.history), onPressed: () => context.go('/history')),
           IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(reimbursementsProvider)),

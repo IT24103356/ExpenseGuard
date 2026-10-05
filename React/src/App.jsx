@@ -13,6 +13,8 @@ import AdminBudgets from './pages/AdminBudgets';
 import Login from './pages/Login';
 import Roles from './pages/Roles';
 import ApprovalQueue from './pages/ApprovalQueue';
+import EmployeeWorkspace from './pages/EmployeeWorkspace';
+import EmployeeClaimDetail from './pages/EmployeeClaimDetail';
 
 function ProtectedRoute({ roles }) {
   const auth = useAuth();
@@ -51,6 +53,8 @@ function App() {
           <Route element={<Shell />}>
             <Route index element={<FinanceDashboard />} />
             <Route path="reimbursements/:id" element={<ReimbursementDetails />} />
+            <Route path="employee" element={<EmployeeWorkspace />} />
+            <Route path="employee/claims/:id" element={<EmployeeClaimDetail />} />
             <Route path="forbidden" element={<div className="page-content"><div className="alert alert-danger" role="alert">Access denied.</div></div>} />
             <Route element={<ProtectedRoute roles={['Finance', 'Admin']} />}>
               <Route path="finance-queue" element={<FinanceQueue />} />

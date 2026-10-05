@@ -8,6 +8,9 @@ import 'screens/claim_detail_screen.dart';
 import 'screens/reimbursement_status_screen.dart';
 import 'screens/payment_status_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/employee_home_screen.dart';
+import 'screens/expense_claim_screen.dart';
+import 'screens/purchase_request_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: ReimbursementApp()));
@@ -39,6 +42,10 @@ class ReimbursementApp extends ConsumerWidget {
         GoRoute(path: '/reimbursement/:id', builder: (ctx, state) => ReimbursementStatusScreen(reimbursementId: state.pathParameters['id']!)),
         GoRoute(path: '/payment/:id', builder: (ctx, state) => PaymentStatusScreen(reimbursementId: state.pathParameters['id']!)),
         GoRoute(path: '/history', builder: (ctx, state) => const HistoryScreen()),
+        GoRoute(path: '/intake', builder: (ctx, state) => const EmployeeHomeScreen()),
+        GoRoute(path: '/intake/claims/new', builder: (ctx, state) => const ExpenseClaimScreen()),
+        GoRoute(path: '/intake/claims/:id', builder: (ctx, state) => ExpenseClaimScreen(claimId: int.parse(state.pathParameters['id']!))),
+        GoRoute(path: '/purchase-requests/new', builder: (ctx, state) => const PurchaseRequestScreen()),
       ],
     );
     return MaterialApp.router(

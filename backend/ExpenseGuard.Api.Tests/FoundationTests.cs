@@ -108,9 +108,9 @@ public sealed class FoundationTests
         var employeeRole = await db.Roles.SingleAsync(r => r.RoleName == RoleNames.Employee);
         var managerRole = await db.Roles.SingleAsync(r => r.RoleName == RoleNames.Manager);
         var headRole = await db.Roles.SingleAsync(r => r.RoleName == RoleNames.DepartmentHead);
-        var owner = new Employee { EmployeeId = 10, Username = "owner", PasswordHash = "x", Department = department, Role = employeeRole };
-        var manager = new Employee { EmployeeId = 11, Username = "manager", PasswordHash = "x", Department = department, Role = managerRole };
-        var head = new Employee { EmployeeId = 12, Username = "head", PasswordHash = "x", Department = department, Role = headRole };
+        var owner = new Employee { EmployeeId = 10, Username = "owner", NormalizedUsername = "owner", FullName = "Owner", Email = "owner@test.local", PasswordHash = "x", Department = department, Role = employeeRole };
+        var manager = new Employee { EmployeeId = 11, Username = "manager", NormalizedUsername = "manager", FullName = "Manager", Email = "manager@test.local", PasswordHash = "x", Department = department, Role = managerRole };
+        var head = new Employee { EmployeeId = 12, Username = "head", NormalizedUsername = "head", FullName = "Head", Email = "head@test.local", PasswordHash = "x", Department = department, Role = headRole };
         var claim = new ExpenseClaim { ExpenseClaimId = 20, Employee = owner, Amount = 500, Category = "Travel", PurchaseNo = "P-1" };
         var reimbursement = new Reimbursement { ReimbursementId = 30, ExpenseClaim = claim, Total = 500, IdempotencyKey = "pay-30" };
         var template = new ApprovalWorkflowTemplate

@@ -1,8 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiGrid, FiList, FiDollarSign, FiBarChart2, FiActivity, FiSettings } from 'react-icons/fi';
+import { FiGrid, FiList, FiDollarSign, FiBarChart2, FiActivity, FiSettings, FiUser } from 'react-icons/fi';
 import { useAuth } from '../auth/AuthContext';
 
 const navItems = [
+  { section: 'Employee', items: [
+    { to: '/employee', icon: <FiUser />, label: 'My Expenses', id: 'nav-employee' },
+  ]},
   { section: 'Finance', items: [
     { to: '/', icon: <FiGrid />, label: 'Dashboard', id: 'nav-dashboard' },
     { to: '/finance-queue', icon: <FiList />, label: 'Processing Queue', id: 'nav-queue', roles: ['Finance', 'Admin'] },

@@ -5,6 +5,7 @@ using ExpenseGuard.Api.Data;
 using ExpenseGuard.Api.Infrastructure;
 using ExpenseGuard.Api.Models;
 using ExpenseGuard.Api.Reimbursements;
+using ExpenseGuard.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,22 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentEmployee, HeaderCurrentEmployee>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IPurchaseRequestService, PurchaseRequestService>();
+builder.Services.AddScoped<IClaimService, ClaimService>();
+builder.Services.AddScoped<IReceiptService, ReceiptService>();
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddSingleton<IReceiptStorage, FakeReceiptStorage>();
+    builder.Services.AddSingleton<IReceiptOcr, FakeReceiptOcr>();
+}
+else
+{
+    builder.Services.AddHttpClient<IReceiptStorage, CloudinaryReceiptStorage>();
+    builder.Services.AddHttpClient<IReceiptOcr, OcrSpaceReceiptOcr>();
+}
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.Section));
 var jwt = builder.Configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new JwtOptions();

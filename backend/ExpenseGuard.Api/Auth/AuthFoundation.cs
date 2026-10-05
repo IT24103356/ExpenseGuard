@@ -114,6 +114,9 @@ public sealed class AuthController(AppDbContext db, ITokenService tokens) : Cont
         var employee = new Employee
         {
             Username = username,
+            NormalizedUsername = username,
+            FullName = username,
+            Email = $"{username}@expenseguard.local",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12),
             DepartmentId = request.DepartmentId,
             RoleId = role.RoleId,
@@ -130,7 +133,7 @@ public sealed class AuthController(AppDbContext db, ITokenService tokens) : Cont
     {
         var username = request.Username.Trim().ToLowerInvariant();
         var employee = await db.Employees.Include(e => e.Role)
-            .SingleOrDefaultAsync(e => e.Username == username && e.IsActive);
+            .SingleOrDefaultAsync(e => e.Username == username && e.IsActive && !e.IsLocked);
         if (employee is null || !BCrypt.Net.BCrypt.Verify(request.Password, employee.PasswordHash))
             return Unauthorized(new { error = "Invalid credentials." });
         return Ok(tokens.Issue(employee));
