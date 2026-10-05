@@ -40,6 +40,13 @@ yarn-error.log*
 .pub/
 build/
 
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+
 # Environment / Secrets
 .env
 .env.local
@@ -47,3 +54,13 @@ build/
 
 # Temp / local
 temp_repo/
+
+# Docs / examples (not needed to build or run the code)
+Docs/
+Documentation/
+LOCAL_HANDOFF.md
+.env.example
+React/README.md
+Flutter/README.md
+ai/expenseguard-agents/README.md
+policy_compliance_mobile/README.md

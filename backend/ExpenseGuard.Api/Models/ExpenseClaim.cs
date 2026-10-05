@@ -18,5 +18,7 @@ public class ExpenseClaim
 
     public Employee Employee { get; set; } = null!;
     public ICollection<FraudFlag> FraudFlags { get; set; } = [];
+    public ICollection<FraudEvaluation> FraudEvaluations { get; set; } = [];
+    public ICollection<PolicyEvaluation> PolicyEvaluations { get; set; } = [];
     public Reimbursement? Reimbursement { get; set; }
 }

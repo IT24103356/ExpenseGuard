@@ -12,13 +12,17 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<dynamic> _history = [];
   bool _loading = true;
-  final String _employeeId = 'EMP-001';
+  static const String _employeeId = String.fromEnvironment('EMPLOYEE_ID');
 
   @override
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     setState(() => _loading = true);
+    if (_employeeId.isEmpty) {
+      setState(() { _history = []; _loading = false; });
+      return;
+    }
     try {
       final data = await ApiService.getReimbursementHistory(_employeeId);
       setState(() { _history = data.where((d) => d['status'] == 'PAID').toList(); _loading = false; });

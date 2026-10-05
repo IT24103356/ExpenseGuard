@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
-  static String? _token;
+  static const String baseUrl = String.fromEnvironment('API_BASE_URL');
+  static String? _token = const String.fromEnvironment('AUTH_TOKEN').isEmpty
+      ? null
+      : const String.fromEnvironment('AUTH_TOKEN');
 
   static void setToken(String token) => _token = token;
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'features/compliance/policy_guidance_screen.dart';
 import 'screens/my_claims_screen.dart';
 import 'screens/claim_detail_screen.dart';
 import 'screens/reimbursement_status_screen.dart';
@@ -7,7 +9,7 @@ import 'screens/payment_status_screen.dart';
 import 'screens/history_screen.dart';
 
 void main() {
-  runApp(const ReimbursementApp());
+  runApp(const ProviderScope(child: ReimbursementApp()));
 }
 
 class ReimbursementApp extends StatelessWidget {
@@ -31,6 +33,7 @@ class ReimbursementApp extends StatelessWidget {
       GoRoute(path: '/reimbursement/:id', builder: (ctx, state) => ReimbursementStatusScreen(reimbursementId: state.pathParameters['id']!)),
       GoRoute(path: '/payment/:id', builder: (ctx, state) => PaymentStatusScreen(reimbursementId: state.pathParameters['id']!)),
       GoRoute(path: '/history', builder: (ctx, state) => const HistoryScreen()),
+      GoRoute(path: '/policy-guidance', builder: (ctx, state) => PolicyGuidanceScreen(initialClaimId: state.uri.queryParameters['claimId'])),
     ],
   );
 

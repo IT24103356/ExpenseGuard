@@ -11,7 +11,7 @@ class MyClaimsScreen extends StatefulWidget {
 class _MyClaimsScreenState extends State<MyClaimsScreen> {
   List<dynamic> _claims = [];
   bool _loading = true;
-  final String _employeeId = 'EMP-001'; // Would come from JWT in real app
+  static const String _employeeId = String.fromEnvironment('EMPLOYEE_ID');
 
   @override
   void initState() {
@@ -21,11 +21,15 @@ class _MyClaimsScreenState extends State<MyClaimsScreen> {
 
   Future<void> _loadClaims() async {
     setState(() => _loading = true);
+    if (_employeeId.isEmpty) {
+      setState(() { _claims = []; _loading = false; });
+      return;
+    }
     try {
       final data = await ApiService.getEmployeeReimbursements(_employeeId);
       setState(() { _claims = data; _loading = false; });
     } catch (_) {
-      setState(() { _claims = _mockClaims(); _loading = false; });
+      setState(() { _claims = _mockClaims(_employeeId); _loading = false; });
     }
   }
 
@@ -35,6 +39,7 @@ class _MyClaimsScreenState extends State<MyClaimsScreen> {
       appBar: AppBar(
         title: const Text('My Claims', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(icon: const Icon(Icons.policy_outlined), tooltip: 'Policy guidance', onPressed: () => context.go('/policy-guidance')),
           IconButton(icon: const Icon(Icons.history), onPressed: () => context.go('/history')),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadClaims),
         ],
@@ -57,9 +62,9 @@ class _MyClaimsScreenState extends State<MyClaimsScreen> {
 
   Widget _buildEmpty() => Center(
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade600),
+      Icon(_employeeId.isEmpty ? Icons.lock_outline : Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade600),
       const SizedBox(height: 16),
-      Text('No claims found', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+      Text(_employeeId.isEmpty ? 'Sign in to view your claims' : 'No claims found', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
     ]),
   );
 }
@@ -159,8 +164,8 @@ class _StatusChip extends StatelessWidget {
   );
 }
 
-List<dynamic> _mockClaims() => [
-  { 'id': '11111111-1111-1111-1111-111111111111', 'expenseClaimId': 'a1b2c3d4-1234-5678-abcd-ef1234567890', 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG', 'amount': 25000.0, 'currency': 'LKR', 'status': 'PAID', 'requestedAt': '2026-09-15T10:00:00Z', 'paymentReference': 'PAY-10001' },
-  { 'id': '22222222-2222-2222-2222-222222222222', 'expenseClaimId': 'b2c3d4e5-2345-6789-bcde-f12345678901', 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG', 'amount': 75000.0, 'currency': 'LKR', 'status': 'WAITING_FOR_APPROVAL', 'requestedAt': '2026-09-20T08:00:00Z', 'paymentReference': null },
-  { 'id': '33333333-3333-3333-3333-333333333333', 'expenseClaimId': 'c3d4e5f6-3456-789a-cdef-123456789012', 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG', 'amount': 12500.0, 'currency': 'LKR', 'status': 'PAYMENT_FAILED', 'requestedAt': '2026-09-10T14:00:00Z', 'paymentReference': 'PAY-10002' },
+List<dynamic> _mockClaims(String employeeId) => [
+  { 'id': '11111111-1111-1111-1111-111111111111', 'expenseClaimId': 'a1b2c3d4-1234-5678-abcd-ef1234567890', 'employeeId': employeeId, 'departmentId': 'DEPT-ENG', 'amount': 25000.0, 'currency': 'LKR', 'status': 'PAID', 'requestedAt': '2026-09-15T10:00:00Z', 'paymentReference': 'PAY-10001' },
+  { 'id': '22222222-2222-2222-2222-222222222222', 'expenseClaimId': 'b2c3d4e5-2345-6789-bcde-f12345678901', 'employeeId': employeeId, 'departmentId': 'DEPT-ENG', 'amount': 75000.0, 'currency': 'LKR', 'status': 'WAITING_FOR_APPROVAL', 'requestedAt': '2026-09-20T08:00:00Z', 'paymentReference': null },
+  { 'id': '33333333-3333-3333-3333-333333333333', 'expenseClaimId': 'c3d4e5f6-3456-789a-cdef-123456789012', 'employeeId': employeeId, 'departmentId': 'DEPT-ENG', 'amount': 12500.0, 'currency': 'LKR', 'status': 'PAYMENT_FAILED', 'requestedAt': '2026-09-10T14:00:00Z', 'paymentReference': 'PAY-10002' },
 ];

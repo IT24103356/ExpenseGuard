@@ -8,6 +8,8 @@ import BudgetDashboard from './pages/BudgetDashboard';
 import SpendReports from './pages/SpendReports';
 import WorkflowMonitor from './pages/WorkflowMonitor';
 import AdminBudgets from './pages/AdminBudgets';
+import PolicyManagement from './pages/PolicyManagement';
+import { FraudDetail, FraudQueue } from './pages/FraudReview';
 
 function App() {
   return (
@@ -34,6 +36,9 @@ function App() {
             <Route path="/workflows" element={<WorkflowMonitor />} />
             <Route path="/workflows/:id" element={<WorkflowMonitor />} />
             <Route path="/admin/budgets" element={<AdminBudgets />} />
+            <Route path="/policies" element={<PolicyManagement />} />
+            <Route path="/fraud" element={<FraudQueue />} />
+            <Route path="/fraud/:id" element={<FraudDetail />} />
           </Routes>
         </main>
       </div>

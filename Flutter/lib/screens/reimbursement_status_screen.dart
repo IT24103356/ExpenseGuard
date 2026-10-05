@@ -143,7 +143,7 @@ class _ReimbursementStatusScreenState extends State<ReimbursementStatusScreen> {
   }
 
   Map<String, dynamic> _mockData() => {
-    'id': widget.reimbursementId, 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG',
+    'id': widget.reimbursementId, 'employeeId': const String.fromEnvironment('EMPLOYEE_ID'), 'departmentId': 'DEPT-ENG',
     'amount': 25000.0, 'currency': 'LKR', 'status': 'PAID',
     'paymentReference': 'PAY-10001', 'completedAt': '2026-09-16T10:30:00Z',
     'requestedAt': '2026-09-15T10:00:00Z', 'failureReason': null,

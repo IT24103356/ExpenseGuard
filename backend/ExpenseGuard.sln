@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimbursementBudget.API", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimbursementBudget.Tests", "ReimbursementBudget.Tests\ReimbursementBudget.Tests.csproj", "{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseGuard.Api.Tests", "ExpenseGuard.Api.Tests\ExpenseGuard.Api.Tests.csproj", "{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}.Release|x64.Build.0 = Release|Any CPU
 		{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}.Release|x86.ActiveCfg = Release|Any CPU
 		{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}.Release|x86.Build.0 = Release|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Debug|x64.Build.0 = Debug|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Debug|x86.Build.0 = Debug|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Release|x64.ActiveCfg = Release|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Release|x64.Build.0 = Release|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Release|x86.ActiveCfg = Release|Any CPU
+		{5B9B1814-4D7B-4E18-A7FA-1E52D4523267}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
