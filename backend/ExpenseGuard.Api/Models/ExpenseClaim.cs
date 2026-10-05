@@ -1,16 +1,31 @@
+namespace ExpenseGuard.Api.Models;
+
 public class ExpenseClaim
 {
-    public int claim_id { get; set; }
-    public int emp_id { get; set; }
-    public varchar catagory { get; set; }
-    public decimal amount { get; set; }
-    public DateTime date { get; set; }
-    public varchar purchase_no { get; set; }
-    public varchar status { get; set; }
-    public text receipt_img { get; set; }
-    public text receipt_doc {get; set;}
-    public DateTime created_at { get; set; }
-    public DateTime updated_at { get; set; }
-    public DateTime deleted_at { get; set; }
-    public DateTime submitted_at { get; set; }
+    public int ExpenseClaimId { get; set; }
+    public int EmployeeId { get; set; }
+    public int? PurchaseRequestId { get; set; }
+    public decimal Amount { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public ClaimStatus Status { get; set; } = ClaimStatus.Draft;
+    public ClaimFlow Flow { get; set; } = ClaimFlow.OutOfPocket;
+    public string Description { get; set; } = string.Empty;
+    public string Currency { get; set; } = "USD";
+    public string? Vendor { get; set; }
+    public string PurchaseNo { get; set; } = string.Empty;
+    public DateTime? PurchaseDate { get; set; }
+    public string? ReceiptImg { get; set; }
+    public string? ReceiptDoc { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? DeletedAt { get; set; }
+    public long Version { get; set; }
+
+    public Employee Employee { get; set; } = null!;
+    public PurchaseRequest? PurchaseRequest { get; set; }
+    public ICollection<Receipt> Receipts { get; set; } = [];
+    public ICollection<ClaimStatusHistory> StatusHistory { get; set; } = [];
+    public ICollection<FraudFlag> FraudFlags { get; set; } = [];
+    public Reimbursement? Reimbursement { get; set; }
 }

@@ -1,0 +1,13 @@
+[project]
+name = "expenseguard-agents"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.7"]
+
+[project.optional-dependencies]
+gemini = ["google-genai>=1.0"]
+test = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
