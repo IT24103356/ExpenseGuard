@@ -17,6 +17,7 @@ import EmployeeWorkspace from './pages/EmployeeWorkspace';
 import EmployeeClaimDetail from './pages/EmployeeClaimDetail';
 import PolicyManagement from './pages/PolicyManagement';
 import { FraudDetail, FraudQueue } from './pages/FraudReview';
+import Departments from './pages/Departments';
 
 function ProtectedRoute({ roles }) {
   const auth = useAuth();
@@ -74,6 +75,7 @@ function App() {
             </Route>
             <Route element={<ProtectedRoute roles={['Admin']} />}>
               <Route path="admin/budgets" element={<AdminBudgets />} />
+              <Route path="admin/departments" element={<Departments />} />
               <Route path="admin/roles" element={<Roles />} />
             </Route>
           </Route>

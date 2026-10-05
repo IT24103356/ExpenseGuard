@@ -30,6 +30,8 @@ builder.Services.AddScoped<IReceiptService, ReceiptService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPolicyService, PolicyService>();
 builder.Services.AddScoped<IFraudService, FraudService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
 if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSingleton<IReceiptStorage, FakeReceiptStorage>();

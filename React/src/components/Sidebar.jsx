@@ -23,6 +23,7 @@ const navItems = [
   ]},
   { section: 'System', items: [
     { to: '/admin/budgets', icon: <FiSettings />, label: 'Admin: Budgets', id: 'nav-admin', roles: ['Admin'] },
+    { to: '/admin/departments', icon: <FiSettings />, label: 'Departments', id: 'nav-departments', roles: ['Admin'] },
     { to: '/admin/roles', icon: <FiSettings />, label: 'Roles', id: 'nav-roles', roles: ['Admin'] },
   ]},
 ];

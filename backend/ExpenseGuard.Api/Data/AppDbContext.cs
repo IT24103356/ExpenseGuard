@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<FraudEvaluation> FraudEvaluations => Set<FraudEvaluation>();
     public DbSet<Reimbursement> Reimbursements => Set<Reimbursement>();
     public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<BudgetTransaction> BudgetTransactions => Set<BudgetTransaction>();
+    public DbSet<BudgetAlert> BudgetAlerts => Set<BudgetAlert>();
     public DbSet<Designation> Designations => Set<Designation>();
     public DbSet<PurchaseRequest> PurchaseRequests => Set<PurchaseRequest>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
@@ -130,6 +132,16 @@ public class AppDbContext : DbContext
             .WithMany(d => d.Budgets)
             .HasForeignKey(b => b.DepartmentId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasOne(t => t.Budget)
+            .WithMany(b => b.Transactions)
+            .HasForeignKey(t => t.BudgetId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<BudgetAlert>()
+            .HasOne(a => a.Budget)
+            .WithMany(b => b.Alerts)
+            .HasForeignKey(a => a.BudgetId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<FraudFlag>()
             .HasOne(f => f.ExpenseClaim)
@@ -175,9 +187,16 @@ public class AppDbContext : DbContext
             .HasOne(a => a.Employee).WithMany()
             .HasForeignKey(a => a.EmployeeId).OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<Department>().HasIndex(d => d.Code).IsUnique();
         modelBuilder.Entity<Budget>()
-            .HasIndex(b => new { b.DepartmentId, b.Period })
+            .HasIndex(b => new { b.DepartmentId, b.PeriodStart, b.PeriodEnd, b.Currency })
             .IsUnique();
+        modelBuilder.Entity<BudgetTransaction>()
+            .HasIndex(t => new { t.BudgetId, t.IdempotencyKey })
+            .IsUnique();
+        modelBuilder.Entity<BudgetTransaction>().HasIndex(t => new { t.BudgetId, t.CreatedAt });
+        modelBuilder.Entity<BudgetAlert>()
+            .HasIndex(a => new { a.BudgetId, a.ThresholdPercent, a.Status });
 
         modelBuilder.Entity<ExpenseClaim>()
             .HasIndex(c => c.Status);
@@ -214,7 +233,19 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<FraudFlag>().Property(p => p.Status).HasMaxLength(30);
         modelBuilder.Entity<FraudFlag>().Property(p => p.EvidenceJson).HasColumnType("jsonb");
         modelBuilder.Entity<Reimbursement>().Property(r => r.Status).HasMaxLength(30);
-        modelBuilder.Entity<Budget>().Property(b => b.Period).HasMaxLength(20);
+        modelBuilder.Entity<Department>().Property(d => d.Code).HasMaxLength(20);
+        modelBuilder.Entity<Department>().Property(d => d.DepartmentName).HasMaxLength(120);
+        modelBuilder.Entity<Department>().Property(d => d.Version).IsConcurrencyToken();
+        modelBuilder.Entity<Budget>().Property(b => b.Name).HasMaxLength(120);
+        modelBuilder.Entity<Budget>().Property(b => b.Currency).HasMaxLength(3).IsFixedLength();
+        modelBuilder.Entity<Budget>().Property(b => b.Version).IsConcurrencyToken();
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.Reference).HasMaxLength(100);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.Description).HasMaxLength(500);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.IdempotencyKey).HasMaxLength(100);
+        modelBuilder.Entity<BudgetAlert>().Property(a => a.Message).HasMaxLength(500);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.Type).HasConversion<string>().HasMaxLength(20);
+        modelBuilder.Entity<BudgetAlert>().Property(a => a.Severity).HasConversion<string>().HasMaxLength(20);
+        modelBuilder.Entity<BudgetAlert>().Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
 
         modelBuilder.Entity<Role>().Property(r => r.ApprovalLimit).HasPrecision(18, 2);
         modelBuilder.Entity<ExpenseClaim>().Property(c => c.Amount).HasPrecision(18, 2);
@@ -236,7 +267,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ApprovalStageDefinition>().Property(r => r.MinimumAmount).HasPrecision(18, 2);
         modelBuilder.Entity<ApprovalStageDefinition>().Property(r => r.MaximumAmount).HasPrecision(18, 2);
         modelBuilder.Entity<Budget>().Property(b => b.AllocatedAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<Budget>().Property(b => b.ReservedAmount).HasPrecision(18, 2);
         modelBuilder.Entity<Budget>().Property(b => b.SpentAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.AllocatedBalance).HasPrecision(18, 2);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.ReservedBalance).HasPrecision(18, 2);
+        modelBuilder.Entity<BudgetTransaction>().Property(t => t.SpentBalance).HasPrecision(18, 2);
+        modelBuilder.Entity<BudgetAlert>().Property(a => a.ThresholdPercent).HasPrecision(5, 2);
+        modelBuilder.Entity<BudgetAlert>().Property(a => a.UtilizationPercent).HasPrecision(7, 2);
 
         modelBuilder.Entity<Role>().HasData(
             new Role { RoleId = 1, RoleName = RoleNames.Employee, PermissionsJson = "[\"reimbursement:self\"]" },

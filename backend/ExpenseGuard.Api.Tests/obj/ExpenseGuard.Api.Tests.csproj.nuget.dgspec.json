@@ -1,0 +1,173 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api.Tests/ExpenseGuard.Api.Tests.csproj": {}
+  },
+  "projects": {
+    "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api.Tests/ExpenseGuard.Api.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api.Tests/ExpenseGuard.Api.Tests.csproj",
+        "projectName": "ExpenseGuard.Api.Tests",
+        "projectPath": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api.Tests/ExpenseGuard.Api.Tests.csproj",
+        "packagesPath": "/Users/shaniy/.nuget/packages/",
+        "outputPath": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api.Tests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/shaniy/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api/ExpenseGuard.Api.csproj": {
+                "projectPath": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api/ExpenseGuard.Api.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore.InMemory": {
+              "target": "Package",
+              "version": "[8.0.31, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
+              "target": "Package",
+              "version": "[8.0.31, )"
+            },
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.*, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.*, )"
+            },
+            "xunit.runner.visualstudio": {
+              "target": "Package",
+              "version": "[2.*, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.423/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api/ExpenseGuard.Api.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api/ExpenseGuard.Api.csproj",
+        "projectName": "ExpenseGuard.Api",
+        "projectPath": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api/ExpenseGuard.Api.csproj",
+        "packagesPath": "/Users/shaniy/.nuget/packages/",
+        "outputPath": "/Users/shaniy/Desktop/SLIIT/Year 03/Year 3 Sem 1/SEF/Assignment/IT24102706/backend/ExpenseGuard.Api/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/shaniy/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.*, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.*, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[8.*, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[10.2.3, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.423/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
