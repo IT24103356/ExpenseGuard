@@ -11,6 +11,7 @@ import 'screens/history_screen.dart';
 import 'screens/employee_home_screen.dart';
 import 'screens/expense_claim_screen.dart';
 import 'screens/purchase_request_screen.dart';
+import 'features/compliance/policy_guidance_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: ReimbursementApp()));
@@ -46,6 +47,7 @@ class ReimbursementApp extends ConsumerWidget {
         GoRoute(path: '/intake/claims/new', builder: (ctx, state) => const ExpenseClaimScreen()),
         GoRoute(path: '/intake/claims/:id', builder: (ctx, state) => ExpenseClaimScreen(claimId: int.parse(state.pathParameters['id']!))),
         GoRoute(path: '/purchase-requests/new', builder: (ctx, state) => const PurchaseRequestScreen()),
+        GoRoute(path: '/policy-guidance', builder: (ctx, state) => PolicyGuidanceScreen(initialClaimId: state.uri.queryParameters['claimId'])),
       ],
     );
     return MaterialApp.router(

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiGrid, FiList, FiDollarSign, FiBarChart2, FiActivity, FiSettings, FiUser } from 'react-icons/fi';
+import { FiGrid, FiList, FiDollarSign, FiBarChart2, FiActivity, FiSettings, FiUser, FiShield, FiAlertTriangle } from 'react-icons/fi';
 import { useAuth } from '../auth/AuthContext';
 
 const navItems = [
@@ -16,6 +16,10 @@ const navItems = [
   ]},
   { section: 'Agentic AI', items: [
     { to: '/workflows', icon: <FiActivity />, label: 'Workflow Monitor', id: 'nav-workflows', roles: ['Finance', 'Admin'] },
+  ]},
+  { section: 'Risk & Compliance', items: [
+    { to: '/policies', icon: <FiShield />, label: 'Policies', id: 'nav-policies', roles: ['Finance', 'Admin'] },
+    { to: '/fraud', icon: <FiAlertTriangle />, label: 'Fraud Review', id: 'nav-fraud', roles: ['Finance', 'Admin'] },
   ]},
   { section: 'System', items: [
     { to: '/admin/budgets', icon: <FiSettings />, label: 'Admin: Budgets', id: 'nav-admin', roles: ['Admin'] },

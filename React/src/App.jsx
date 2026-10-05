@@ -15,6 +15,8 @@ import Roles from './pages/Roles';
 import ApprovalQueue from './pages/ApprovalQueue';
 import EmployeeWorkspace from './pages/EmployeeWorkspace';
 import EmployeeClaimDetail from './pages/EmployeeClaimDetail';
+import PolicyManagement from './pages/PolicyManagement';
+import { FraudDetail, FraudQueue } from './pages/FraudReview';
 
 function ProtectedRoute({ roles }) {
   const auth = useAuth();
@@ -62,6 +64,9 @@ function App() {
               <Route path="reports" element={<SpendReports />} />
               <Route path="workflows" element={<WorkflowAudit />} />
               <Route path="workflows/:id" element={<WorkflowAudit />} />
+              <Route path="policies" element={<PolicyManagement />} />
+              <Route path="fraud" element={<FraudQueue />} />
+              <Route path="fraud/:id" element={<FraudDetail />} />
             </Route>
             <Route element={<ProtectedRoute roles={['Manager', 'DepartmentHead', 'Admin']} />}>
               <Route path="approvals" element={<ApprovalQueue />} />

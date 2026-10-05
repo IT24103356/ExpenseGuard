@@ -27,5 +27,7 @@ public class ExpenseClaim
     public ICollection<Receipt> Receipts { get; set; } = [];
     public ICollection<ClaimStatusHistory> StatusHistory { get; set; } = [];
     public ICollection<FraudFlag> FraudFlags { get; set; } = [];
+    public ICollection<FraudEvaluation> FraudEvaluations { get; set; } = [];
+    public ICollection<PolicyEvaluation> PolicyEvaluations { get; set; } = [];
     public Reimbursement? Reimbursement { get; set; }
 }

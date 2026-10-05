@@ -14,6 +14,8 @@ class MyClaimsScreen extends ConsumerWidget {
         title: const Text('My Claims', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(tooltip: 'Expense intake', icon: const Icon(Icons.receipt_long), onPressed: () => context.go('/intake')),
+          IconButton(tooltip: 'Expense intake', icon: const Icon(Icons.receipt_long), onPressed: () => context.go('/intake')),
+          IconButton(tooltip: 'Policy guidance', icon: const Icon(Icons.policy), onPressed: () => context.go('/policy-guidance')),
           IconButton(icon: const Icon(Icons.history), onPressed: () => context.go('/history')),
           IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(reimbursementsProvider)),

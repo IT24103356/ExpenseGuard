@@ -71,6 +71,14 @@ class _ClaimDetailScreenState extends ConsumerState<ClaimDetailScreen> {
             ...((_workflow!['steps'] as List?) ?? []).map((s) => _StepRow(step: s)),
           ]))),
           const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => context.go(int.tryParse(widget.claimId) == null
+                ? '/policy-guidance'
+                : '/policy-guidance?claimId=${Uri.encodeQueryComponent(widget.claimId)}'),
+            icon: const Icon(Icons.policy_outlined),
+            label: const Text('Review compliance and revise'),
+          ),
+          const SizedBox(height: 8),
           if (d['status'] == 'PAID')
             ElevatedButton.icon(
               onPressed: () => context.go('/payment/${d['id']}'),

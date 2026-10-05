@@ -12,7 +12,11 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<ExpenseClaim> ExpenseClaims => Set<ExpenseClaim>();
     public DbSet<Policy> Policies => Set<Policy>();
+    public DbSet<PolicyDesignation> PolicyDesignations => Set<PolicyDesignation>();
+    public DbSet<PolicyEvaluation> PolicyEvaluations => Set<PolicyEvaluation>();
+    public DbSet<PolicyViolation> PolicyViolations => Set<PolicyViolation>();
     public DbSet<FraudFlag> FraudFlags => Set<FraudFlag>();
+    public DbSet<FraudEvaluation> FraudEvaluations => Set<FraudEvaluation>();
     public DbSet<Reimbursement> Reimbursements => Set<Reimbursement>();
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<Designation> Designations => Set<Designation>();
@@ -100,6 +104,26 @@ public class AppDbContext : DbContext
             .WithMany(d => d.Policies)
             .HasForeignKey(p => p.DepartmentId)
             .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<Policy>()
+            .HasIndex(p => new { p.PolicyCode, p.Version })
+            .IsUnique();
+        modelBuilder.Entity<Policy>()
+            .HasIndex(p => new { p.IsActive, p.Category, p.Currency, p.DepartmentId, p.EffectiveFrom, p.EffectiveTo });
+        modelBuilder.Entity<PolicyDesignation>()
+            .HasIndex(x => new { x.PolicyId, x.Designation })
+            .IsUnique();
+        modelBuilder.Entity<PolicyEvaluation>()
+            .HasIndex(x => new { x.ExpenseClaimId, x.InputFingerprint })
+            .IsUnique();
+        modelBuilder.Entity<PolicyEvaluation>()
+            .HasOne(x => x.ExpenseClaim).WithMany(x => x.PolicyEvaluations)
+            .HasForeignKey(x => x.ExpenseClaimId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PolicyEvaluation>()
+            .HasOne(x => x.Policy).WithMany(x => x.Evaluations)
+            .HasForeignKey(x => x.PolicyId).OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<PolicyViolation>()
+            .HasOne(x => x.PolicyEvaluation).WithMany(x => x.Violations)
+            .HasForeignKey(x => x.PolicyEvaluationId).OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Budget>()
             .HasOne(b => b.Department)
@@ -111,7 +135,19 @@ public class AppDbContext : DbContext
             .HasOne(f => f.ExpenseClaim)
             .WithMany(c => c.FraudFlags)
             .HasForeignKey(f => f.ExpenseClaimId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<FraudFlag>()
+            .HasOne(x => x.FraudEvaluation).WithMany(x => x.Flags)
+            .HasForeignKey(x => x.FraudEvaluationId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FraudEvaluation>()
+            .HasOne(x => x.ExpenseClaim).WithMany(x => x.FraudEvaluations)
+            .HasForeignKey(x => x.ExpenseClaimId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FraudEvaluation>()
+            .HasIndex(x => new { x.ExpenseClaimId, x.InputFingerprint }).IsUnique();
+        modelBuilder.Entity<FraudEvaluation>()
+            .HasIndex(x => x.NormalizedInvoiceNumber);
+        modelBuilder.Entity<FraudFlag>()
+            .HasIndex(x => new { x.Status, x.Severity, x.CreatedAt });
 
         modelBuilder.Entity<Reimbursement>()
             .HasOne(r => r.ExpenseClaim)
@@ -162,6 +198,21 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Employee>().Property(e => e.Email).HasMaxLength(320);
         modelBuilder.Entity<Employee>().Property(e => e.NormalizedUsername).HasMaxLength(100);
         modelBuilder.Entity<Policy>().Property(p => p.Category).HasMaxLength(100);
+        modelBuilder.Entity<Policy>().Property(p => p.PolicyCode).HasMaxLength(50);
+        modelBuilder.Entity<Policy>().Property(p => p.Currency).HasMaxLength(3);
+        modelBuilder.Entity<PolicyDesignation>().Property(p => p.Designation).HasMaxLength(100);
+        modelBuilder.Entity<PolicyEvaluation>().Property(p => p.InputFingerprint).HasMaxLength(64);
+        modelBuilder.Entity<PolicyEvaluation>().Property(p => p.Outcome).HasMaxLength(30);
+        modelBuilder.Entity<PolicyViolation>().Property(p => p.RuleCode).HasMaxLength(60);
+        modelBuilder.Entity<PolicyViolation>().Property(p => p.Severity).HasMaxLength(20);
+        modelBuilder.Entity<FraudEvaluation>().Property(p => p.InputFingerprint).HasMaxLength(64);
+        modelBuilder.Entity<FraudEvaluation>().Property(p => p.NormalizedInvoiceNumber).HasMaxLength(100);
+        modelBuilder.Entity<FraudEvaluation>().Property(p => p.RiskLevel).HasMaxLength(20);
+        modelBuilder.Entity<FraudFlag>().Property(p => p.RuleCode).HasMaxLength(60);
+        modelBuilder.Entity<FraudFlag>().Property(p => p.Severity).HasMaxLength(20);
+        modelBuilder.Entity<FraudFlag>().Property(p => p.Source).HasMaxLength(30);
+        modelBuilder.Entity<FraudFlag>().Property(p => p.Status).HasMaxLength(30);
+        modelBuilder.Entity<FraudFlag>().Property(p => p.EvidenceJson).HasColumnType("jsonb");
         modelBuilder.Entity<Reimbursement>().Property(r => r.Status).HasMaxLength(30);
         modelBuilder.Entity<Budget>().Property(b => b.Period).HasMaxLength(20);
 
@@ -172,8 +223,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PurchaseRequest>().Property(p => p.Version).IsConcurrencyToken();
         modelBuilder.Entity<Receipt>().Property(r => r.ExtractedAmount).HasPrecision(18, 2);
         modelBuilder.Entity<Receipt>().Property(r => r.Confidence).HasPrecision(5, 4);
+        modelBuilder.Entity<Policy>().Property(p => p.MinAmount).HasPrecision(18, 2);
         modelBuilder.Entity<Policy>().Property(p => p.MaxAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<PolicyViolation>().Property(p => p.ExpectedAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<PolicyViolation>().Property(p => p.ActualAmount).HasPrecision(18, 2);
         modelBuilder.Entity<FraudFlag>().Property(f => f.RiskScore).HasPrecision(5, 2);
+        modelBuilder.Entity<FraudEvaluation>().Property(f => f.RiskScore).HasPrecision(5, 2);
+        modelBuilder.Entity<FraudEvaluation>().Property(f => f.ClaimAmount).HasPrecision(18, 2);
+        modelBuilder.Entity<FraudEvaluation>().Property(f => f.ReceiptAmount).HasPrecision(18, 2);
         modelBuilder.Entity<Reimbursement>().Property(r => r.Total).HasPrecision(18, 2);
         modelBuilder.Entity<PaymentTransaction>().Property(r => r.Amount).HasPrecision(18, 2);
         modelBuilder.Entity<ApprovalStageDefinition>().Property(r => r.MinimumAmount).HasPrecision(18, 2);

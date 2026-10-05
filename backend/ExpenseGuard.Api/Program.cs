@@ -27,6 +27,9 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IPurchaseRequestService, PurchaseRequestService>();
 builder.Services.AddScoped<IClaimService, ClaimService>();
 builder.Services.AddScoped<IReceiptService, ReceiptService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IPolicyService, PolicyService>();
+builder.Services.AddScoped<IFraudService, FraudService>();
 if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSingleton<IReceiptStorage, FakeReceiptStorage>();

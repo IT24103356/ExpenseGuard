@@ -89,4 +89,13 @@ export const getWorkflows = () => api.get('/workflows');
 export const getWorkflow = (id) => api.get(`/workflows/${id}`);
 export const getWorkflowAudit = (id) => api.get(`/workflows/${id}/audit`);
 
+// ─── Policy and fraud ────────────────────────────────────────────────────────
+export const getPolicies = (params) => api.get('/policies', { params });
+export const createPolicy = (data) => api.post('/policies', data);
+export const createPolicyVersion = (policyId, data) => api.post(`/policies/${policyId}/versions`, data);
+export const evaluatePolicy = (data) => api.post('/policies/evaluate', data);
+export const getFraudFlags = (params) => api.get('/fraud/flags', { params });
+export const reviewFraudFlag = (id, data) => api.patch(`/fraud/flags/${id}/review`, data);
+export const resolveFraudFlag = (id, data) => api.post(`/fraud/flags/${id}/resolve`, data);
+
 export default api;
