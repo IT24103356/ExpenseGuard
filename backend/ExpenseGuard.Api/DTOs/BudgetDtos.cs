@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using ExpenseGuard.Api.Models;
+using DataAnnotationsValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace ExpenseGuard.Api.DTOs;
 
@@ -44,10 +45,10 @@ public sealed class AllocateBudgetRequest : IValidatableObject
     [Range(typeof(decimal), "0.01", "9999999999999999")] public decimal Amount { get; init; }
     [StringLength(100)] public string? IdempotencyKey { get; init; }
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    public IEnumerable<DataAnnotationsValidationResult> Validate(ValidationContext validationContext)
     {
         if (PeriodEnd < PeriodStart)
-            yield return new ValidationResult("PeriodEnd must be on or after PeriodStart.", [nameof(PeriodEnd)]);
+            yield return new DataAnnotationsValidationResult("PeriodEnd must be on or after PeriodStart.", [nameof(PeriodEnd)]);
     }
 }
 

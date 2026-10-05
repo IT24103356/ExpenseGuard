@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using ExpenseGuard.Api.Models;
+using DataAnnotationsValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace ExpenseGuard.Api.Contracts;
 
@@ -32,12 +33,12 @@ public sealed class ClaimWriteDto : IValidatableObject
     public ClaimFlow Flow { get; init; } = ClaimFlow.OutOfPocket;
     [Range(0, long.MaxValue)] public long Version { get; init; }
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    public IEnumerable<DataAnnotationsValidationResult> Validate(ValidationContext validationContext)
     {
         if (Flow == ClaimFlow.PrePurchase && PurchaseRequestId is null)
-            yield return new ValidationResult("Pre-purchase claims require a purchase request.", [nameof(PurchaseRequestId)]);
+            yield return new DataAnnotationsValidationResult("Pre-purchase claims require a purchase request.", [nameof(PurchaseRequestId)]);
         if (Flow == ClaimFlow.OutOfPocket && PurchaseRequestId is not null)
-            yield return new ValidationResult("Out-of-pocket claims cannot link a purchase request.", [nameof(PurchaseRequestId)]);
+            yield return new DataAnnotationsValidationResult("Out-of-pocket claims cannot link a purchase request.", [nameof(PurchaseRequestId)]);
     }
 }
 
