@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimbursementBudget.API", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReimbursementBudget.Tests", "ReimbursementBudget.Tests\ReimbursementBudget.Tests.csproj", "{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseGuard.Api.Tests", "ExpenseGuard.Api.Tests\ExpenseGuard.Api.Tests.csproj", "{0E76A509-8E63-4006-920A-5716068FDC1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}.Release|x64.Build.0 = Release|Any CPU
 		{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}.Release|x86.ActiveCfg = Release|Any CPU
 		{97770E3D-AE9E-4D5E-9EA7-CE7E5E919FA3}.Release|x86.Build.0 = Release|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Debug|x64.Build.0 = Debug|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Debug|x86.Build.0 = Debug|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Release|x64.ActiveCfg = Release|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Release|x64.Build.0 = Release|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Release|x86.ActiveCfg = Release|Any CPU
+		{0E76A509-8E63-4006-920A-5716068FDC1C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,31 +1,99 @@
+using System.Text;
+using System.Threading.RateLimiting;
+using ExpenseGuard.Api.Auth;
 using ExpenseGuard.Api.Data;
+using ExpenseGuard.Api.Infrastructure;
+using ExpenseGuard.Api.Models;
+using ExpenseGuard.Api.Reimbursements;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
-
-// Add services to the container.
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext().WriteTo.Console());
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.Section));
+var jwt = builder.Configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new JwtOptions();
+if (Encoding.UTF8.GetByteCount(jwt.SigningKey) < 32)
+    throw new InvalidOperationException("Set Jwt__SigningKey to an environment-only secret of at least 32 bytes.");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, ValidIssuer = jwt.Issuer,
+        ValidateAudience = true, ValidAudience = jwt.Audience,
+        ValidateLifetime = true, ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+        ClockSkew = TimeSpan.FromMinutes(1)
+    };
+});
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanApprove", p => p.RequireRole(RoleNames.Manager, RoleNames.DepartmentHead, RoleNames.Admin));
+    options.AddPolicy("FinanceOnly", p => p.RequireRole(RoleNames.Finance, RoleNames.Admin));
+    options.AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.Admin));
+    options.AddPolicy("OwnReimbursement", p => p.AddRequirements(new OwnsReimbursementRequirement()));
+});
+builder.Services.AddScoped<IAuthorizationHandler, OwnsReimbursementHandler>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IReimbursementService, ReimbursementService>();
+builder.Services.AddScoped<IBudgetGateway, UnconfiguredBudgetGateway>();
+builder.Services.AddSingleton<IPaymentProvider, DeterministicPaymentProvider>();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks();
+builder.Services.AddCors(options => options.AddPolicy("Clients", policy =>
+    policy.WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [])
+        .AllowAnyHeader().AllowAnyMethod()));
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100, Window = TimeSpan.FromMinutes(1), QueueLimit = 0
+            }));
+});
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization", Type = SecuritySchemeType.Http,
+        Scheme = "bearer", BearerFormat = "JWT", In = ParameterLocation.Header
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = []
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
-
+app.UseExceptionHandler();
+app.UseSerilogRequestLogging();
+app.UseCors("Clients");
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
+app.MapHealthChecks("/health");
 app.Run();
+
+public partial class Program;

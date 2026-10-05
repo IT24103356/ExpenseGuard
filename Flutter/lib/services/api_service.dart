@@ -1,57 +1,68 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  const ApiException(this.statusCode, this.message);
+  @override
+  String toString() => message;
+}
+
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
-  static String? _token;
+  ApiService({http.Client? client, String? baseUrl, this.token})
+      : client = client ?? http.Client(),
+        baseUrl = baseUrl ?? const String.fromEnvironment(
+          'EXPENSEGUARD_API_URL',
+          defaultValue: 'http://10.0.2.2:5000/api',
+        );
 
-  static void setToken(String token) => _token = token;
+  final http.Client client;
+  final String baseUrl;
+  final String? token;
 
-  static Map<String, String> get _headers => {
+  Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    if (_token != null) 'Authorization': 'Bearer $_token',
+    if (token != null) 'Authorization': 'Bearer $token',
   };
 
-  // ── Reimbursements ──────────────────────────────────────────────────────
-  static Future<List<dynamic>> getEmployeeReimbursements(String employeeId) async {
-    final resp = await http.get(
-      Uri.parse('$baseUrl/reimbursements/employee/$employeeId'),
-      headers: _headers,
-    );
-    if (resp.statusCode == 200) return jsonDecode(resp.body);
-    throw Exception('Failed to load reimbursements: ${resp.statusCode}');
+  Future<Map<String, dynamic>> login(String username, String password) async {
+    final response = await client.post(Uri.parse('$baseUrl/auth/login'),
+        headers: _headers, body: jsonEncode({'username': username, 'password': password}));
+    return _object(response);
   }
 
-  static Future<Map<String, dynamic>> getReimbursement(String id) async {
-    final resp = await http.get(
-      Uri.parse('$baseUrl/reimbursements/$id'),
-      headers: _headers,
-    );
-    if (resp.statusCode == 200) return jsonDecode(resp.body);
-    throw Exception('Reimbursement not found');
+  Future<List<dynamic>> getEmployeeReimbursements(int employeeId) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/reimbursements/employee/$employeeId'), headers: _headers);
+    return _list(response);
   }
 
-  static Future<Map<String, dynamic>> getReimbursementByClaim(String claimId) async {
-    final resp = await http.get(
-      Uri.parse('$baseUrl/reimbursements/by-claim/$claimId'),
-      headers: _headers,
-    );
-    if (resp.statusCode == 200) return jsonDecode(resp.body);
-    throw Exception('Not found');
+  Future<Map<String, dynamic>> getReimbursement(int id) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/reimbursements/$id'), headers: _headers);
+    return _object(response);
   }
 
-  // ── Workflows ────────────────────────────────────────────────────────────
-  static Future<Map<String, dynamic>> getWorkflowByClaim(String claimId) async {
-    final resp = await http.get(
-      Uri.parse('$baseUrl/workflows/by-claim/$claimId'),
-      headers: _headers,
-    );
-    if (resp.statusCode == 200) return jsonDecode(resp.body);
-    throw Exception('Workflow not found');
+  Future<Map<String, dynamic>> getWorkflowByClaim(int claimId) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/workflows/claim/$claimId'), headers: _headers);
+    return _object(response);
   }
 
-  // ── History ──────────────────────────────────────────────────────────────
-  static Future<List<dynamic>> getReimbursementHistory(String employeeId) async {
-    return getEmployeeReimbursements(employeeId);
+  dynamic _decode(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.body.isEmpty ? null : jsonDecode(response.body);
+    }
+    var message = 'Request failed (${response.statusCode}).';
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      message = (body['detail'] ?? body['error'] ?? body['title'] ?? message).toString();
+    } catch (_) {}
+    throw ApiException(response.statusCode, message);
   }
+
+  Map<String, dynamic> _object(http.Response response) =>
+      _decode(response) as Map<String, dynamic>;
+  List<dynamic> _list(http.Response response) => _decode(response) as List<dynamic>;
 }

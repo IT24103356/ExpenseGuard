@@ -1,57 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../services/api_service.dart';
+import '../auth/auth_provider.dart';
 
-class MyClaimsScreen extends StatefulWidget {
+class MyClaimsScreen extends ConsumerWidget {
   const MyClaimsScreen({super.key});
-  @override
-  State<MyClaimsScreen> createState() => _MyClaimsScreenState();
-}
-
-class _MyClaimsScreenState extends State<MyClaimsScreen> {
-  List<dynamic> _claims = [];
-  bool _loading = true;
-  final String _employeeId = 'EMP-001'; // Would come from JWT in real app
 
   @override
-  void initState() {
-    super.initState();
-    _loadClaims();
-  }
-
-  Future<void> _loadClaims() async {
-    setState(() => _loading = true);
-    try {
-      final data = await ApiService.getEmployeeReimbursements(_employeeId);
-      setState(() { _claims = data; _loading = false; });
-    } catch (_) {
-      setState(() { _claims = _mockClaims(); _loading = false; });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final claims = ref.watch(reimbursementsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Claims', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(icon: const Icon(Icons.history), onPressed: () => context.go('/history')),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadClaims),
+          IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(reimbursementsProvider)),
+          IconButton(tooltip: 'Sign out', icon: const Icon(Icons.logout),
+              onPressed: () => ref.read(authProvider.notifier).logout()),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _claims.isEmpty
+      body: claims.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _ErrorState(
+          message: error.toString(),
+          onRetry: () => ref.invalidate(reimbursementsProvider),
+        ),
+        data: (items) => items.isEmpty
               ? _buildEmpty()
               : RefreshIndicator(
-                  onRefresh: _loadClaims,
+                  onRefresh: () async => ref.refresh(reimbursementsProvider.future),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _claims.length,
+                    itemCount: items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (ctx, i) => _ClaimCard(claim: _claims[i]),
+                    itemBuilder: (ctx, i) => _ClaimCard(claim: items[i]),
                   ),
                 ),
+      ),
     );
   }
 
@@ -80,7 +66,7 @@ class _ClaimCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Claim #${(claim['expenseClaimId'] as String? ?? '').substring(0, 8)}…',
+              Text('Claim #${claim['expenseClaimId']}',
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey)),
               _StatusChip(status: status, color: color),
             ]),
@@ -93,7 +79,7 @@ class _ClaimCard extends StatelessWidget {
             Row(children: [
               Icon(Icons.business_outlined, size: 14, color: Colors.grey.shade500),
               const SizedBox(width: 4),
-              Text(claim['departmentId'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+              Text('${claim['departmentId'] ?? ''}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
               const Spacer(),
               Text(_formatDate(claim['requestedAt']), style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
             ]),
@@ -159,8 +145,17 @@ class _StatusChip extends StatelessWidget {
   );
 }
 
-List<dynamic> _mockClaims() => [
-  { 'id': '11111111-1111-1111-1111-111111111111', 'expenseClaimId': 'a1b2c3d4-1234-5678-abcd-ef1234567890', 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG', 'amount': 25000.0, 'currency': 'LKR', 'status': 'PAID', 'requestedAt': '2026-09-15T10:00:00Z', 'paymentReference': 'PAY-10001' },
-  { 'id': '22222222-2222-2222-2222-222222222222', 'expenseClaimId': 'b2c3d4e5-2345-6789-bcde-f12345678901', 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG', 'amount': 75000.0, 'currency': 'LKR', 'status': 'WAITING_FOR_APPROVAL', 'requestedAt': '2026-09-20T08:00:00Z', 'paymentReference': null },
-  { 'id': '33333333-3333-3333-3333-333333333333', 'expenseClaimId': 'c3d4e5f6-3456-789a-cdef-123456789012', 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG', 'amount': 12500.0, 'currency': 'LKR', 'status': 'PAYMENT_FAILED', 'requestedAt': '2026-09-10T14:00:00Z', 'paymentReference': 'PAY-10002' },
-];
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(
+    padding: const EdgeInsets.all(24),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(message, textAlign: TextAlign.center),
+      const SizedBox(height: 12),
+      OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+    ]),
+  ));
+}

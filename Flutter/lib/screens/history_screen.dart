@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../services/api_service.dart';
+import '../auth/auth_provider.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   List<dynamic> _history = [];
   bool _loading = true;
-  final String _employeeId = 'EMP-001';
+  Object? _error;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -20,10 +21,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final data = await ApiService.getReimbursementHistory(_employeeId);
+      final session = ref.read(authProvider).requireValue!;
+      final data = await ref.read(apiProvider).getEmployeeReimbursements(session.employeeId);
       setState(() { _history = data.where((d) => d['status'] == 'PAID').toList(); _loading = false; });
-    } catch (_) {
-      setState(() { _history = _mockHistory(); _loading = false; });
+    } catch (error) {
+      setState(() { _error = error; _loading = false; });
     }
   }
 
@@ -51,6 +53,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_error.toString()), OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                  ]))
+                : _history.isEmpty
+                  ? const Center(child: Text('No paid reimbursements yet.'))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _history.length,
@@ -77,9 +85,4 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  List<dynamic> _mockHistory() => [
-    { 'id': '1', 'amount': 25000.0, 'departmentId': 'DEPT-ENG', 'status': 'PAID', 'paymentReference': 'PAY-10001', 'completedAt': '2026-09-16T10:30:00Z' },
-    { 'id': '2', 'amount': 12500.0, 'departmentId': 'DEPT-ENG', 'status': 'PAID', 'paymentReference': 'PAY-10003', 'completedAt': '2026-08-20T14:00:00Z' },
-    { 'id': '3', 'amount': 5000.0, 'departmentId': 'DEPT-ENG', 'status': 'PAID', 'paymentReference': 'PAY-10004', 'completedAt': '2026-07-10T09:00:00Z' },
-  ];
 }

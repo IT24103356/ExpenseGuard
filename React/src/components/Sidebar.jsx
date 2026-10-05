@@ -1,25 +1,28 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiGrid, FiList, FiDollarSign, FiBarChart2, FiActivity, FiSettings } from 'react-icons/fi';
+import { useAuth } from '../auth/AuthContext';
 
 const navItems = [
   { section: 'Finance', items: [
-    { to: '/', icon: <FiGrid />, label: 'Finance Dashboard', id: 'nav-dashboard' },
-    { to: '/finance-queue', icon: <FiList />, label: 'Processing Queue', id: 'nav-queue' },
+    { to: '/', icon: <FiGrid />, label: 'Dashboard', id: 'nav-dashboard' },
+    { to: '/finance-queue', icon: <FiList />, label: 'Processing Queue', id: 'nav-queue', roles: ['Finance', 'Admin'] },
   ]},
   { section: 'Budget', items: [
-    { to: '/budgets', icon: <FiDollarSign />, label: 'Budget Overview', id: 'nav-budgets' },
-    { to: '/reports', icon: <FiBarChart2 />, label: 'Spend Analytics', id: 'nav-reports' },
+    { to: '/budgets', icon: <FiDollarSign />, label: 'Budget Overview', id: 'nav-budgets', roles: ['Finance', 'Admin'] },
+    { to: '/reports', icon: <FiBarChart2 />, label: 'Spend Analytics', id: 'nav-reports', roles: ['Finance', 'Admin'] },
   ]},
   { section: 'Agentic AI', items: [
-    { to: '/workflows', icon: <FiActivity />, label: 'Workflow Monitor', id: 'nav-workflows' },
+    { to: '/workflows', icon: <FiActivity />, label: 'Workflow Monitor', id: 'nav-workflows', roles: ['Finance', 'Admin'] },
   ]},
   { section: 'System', items: [
-    { to: '/admin/budgets', icon: <FiSettings />, label: 'Admin: Budgets', id: 'nav-admin' },
+    { to: '/admin/budgets', icon: <FiSettings />, label: 'Admin: Budgets', id: 'nav-admin', roles: ['Admin'] },
+    { to: '/admin/roles', icon: <FiSettings />, label: 'Roles', id: 'nav-roles', roles: ['Admin'] },
   ]},
 ];
 
 export default function Sidebar() {
   const location = useLocation();
+  const { hasRole } = useAuth();
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -33,7 +36,7 @@ export default function Sidebar() {
         {navItems.map(section => (
           <div key={section.section}>
             <div className="nav-section-title">{section.section}</div>
-            {section.items.map(item => (
+            {section.items.filter(item => !item.roles || hasRole(...item.roles)).map(item => (
               <Link
                 key={item.to}
                 to={item.to}

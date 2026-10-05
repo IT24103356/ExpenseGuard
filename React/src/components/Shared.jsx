@@ -4,7 +4,28 @@ export function StatusBadge({ status }) {
 }
 
 export function LoadingSpinner() {
-  return <div className="loading-container"><div className="loading-spinner"/></div>;
+  return <div className="loading-container" role="status" aria-label="Loading"><div className="loading-spinner"/></div>;
+}
+
+export function apiErrorMessage(error, fallback = 'Something went wrong.') {
+  const status = error?.response?.status;
+  if (status === 401) return 'Your session expired. Sign in again.';
+  if (status === 403) return 'You do not have permission to perform this action.';
+  if (status === 409) return error.response?.data?.detail || error.response?.data?.error || 'The record changed. Refresh and try again.';
+  return error?.response?.data?.detail || error?.response?.data?.error || fallback;
+}
+
+export function ErrorState({ error, onRetry }) {
+  return (
+    <div className="alert alert-danger" role="alert">
+      <span>{apiErrorMessage(error)}</span>
+      {onRetry && <button className="btn btn-ghost btn-sm" onClick={onRetry}>Retry</button>}
+    </div>
+  );
+}
+
+export function EmptyState({ message = 'No records found.' }) {
+  return <div className="card empty-state">{message}</div>;
 }
 
 export function AmountDisplay({ amount, currency = 'LKR', large }) {

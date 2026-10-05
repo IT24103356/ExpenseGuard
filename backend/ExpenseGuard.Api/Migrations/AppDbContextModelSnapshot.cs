@@ -17,10 +17,191 @@ namespace ExpenseGuard.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.30")
+                .HasAnnotation("ProductVersion", "8.0.31")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalProcess", b =>
+                {
+                    b.Property<Guid>("ApprovalProcessId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ApprovalWorkflowTemplateId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CurrentSequence")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReimbursementId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TemplateSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ApprovalProcessId");
+
+                    b.HasIndex("ApprovalWorkflowTemplateId");
+
+                    b.HasIndex("ReimbursementId");
+
+                    b.ToTable("ApprovalProcesses");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalStageDefinition", b =>
+                {
+                    b.Property<int>("ApprovalStageDefinitionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ApprovalStageDefinitionId"));
+
+                    b.Property<int>("ApprovalWorkflowTemplateId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("MaximumAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("MinimumAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("RequiredRole")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ApprovalStageDefinitionId");
+
+                    b.HasIndex("ApprovalWorkflowTemplateId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("ApprovalStageDefinitions");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalStep", b =>
+                {
+                    b.Property<Guid>("ApprovalStepId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApprovalProcessId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DecidedByEmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RequiredRole")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StageSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ApprovalStepId");
+
+                    b.HasIndex("DecidedByEmployeeId");
+
+                    b.HasIndex("ApprovalProcessId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("ApprovalSteps");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalWorkflowTemplate", b =>
+                {
+                    b.Property<int>("ApprovalWorkflowTemplateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ApprovalWorkflowTemplateId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ApprovalWorkflowTemplateId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.ToTable("ApprovalWorkflowTemplates");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.AuditLog", b =>
+                {
+                    b.Property<Guid>("AuditLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DataJson")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("AuditLogId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("AuditLogs");
+                });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Budget", b =>
                 {
@@ -84,6 +265,9 @@ namespace ExpenseGuard.Api.Migrations
 
                     b.Property<int>("DepartmentId")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<int?>("ManagerId")
                         .HasColumnType("integer");
@@ -203,6 +387,50 @@ namespace ExpenseGuard.Api.Migrations
                     b.ToTable("FraudFlags");
                 });
 
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PaymentTransaction", b =>
+                {
+                    b.Property<Guid>("PaymentTransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExternalTransactionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ReimbursementId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("PaymentTransactionId");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("ReimbursementId");
+
+                    b.ToTable("PaymentTransactions");
+                });
+
             modelBuilder.Entity("ExpenseGuard.Api.Models.Policy", b =>
                 {
                     b.Property<int>("PolicyId")
@@ -241,8 +469,15 @@ namespace ExpenseGuard.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReimbursementId"));
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -250,8 +485,30 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<int>("ExpenseClaimId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PaymentProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentReference")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -268,6 +525,9 @@ namespace ExpenseGuard.Api.Migrations
                     b.HasKey("ReimbursementId");
 
                     b.HasIndex("ExpenseClaimId")
+                        .IsUnique();
+
+                    b.HasIndex("IdempotencyKey")
                         .IsUnique();
 
                     b.ToTable("Reimbursements");
@@ -288,6 +548,16 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<bool>("CanApprove")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("CanManageRoles")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("CanProcessPayments")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PermissionsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("RoleName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -295,7 +565,271 @@ namespace ExpenseGuard.Api.Migrations
 
                     b.HasKey("RoleId");
 
+                    b.HasIndex("RoleName")
+                        .IsUnique();
+
                     b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            RoleId = 1,
+                            ApprovalLimit = 0m,
+                            CanApprove = false,
+                            CanManageRoles = false,
+                            CanProcessPayments = false,
+                            PermissionsJson = "[\"reimbursement:self\"]",
+                            RoleName = "Employee"
+                        },
+                        new
+                        {
+                            RoleId = 2,
+                            ApprovalLimit = 100000m,
+                            CanApprove = true,
+                            CanManageRoles = false,
+                            CanProcessPayments = false,
+                            PermissionsJson = "[\"reimbursement:approve\"]",
+                            RoleName = "Manager"
+                        },
+                        new
+                        {
+                            RoleId = 3,
+                            ApprovalLimit = 1000000m,
+                            CanApprove = true,
+                            CanManageRoles = false,
+                            CanProcessPayments = false,
+                            PermissionsJson = "[\"reimbursement:approve\"]",
+                            RoleName = "DepartmentHead"
+                        },
+                        new
+                        {
+                            RoleId = 4,
+                            ApprovalLimit = 0m,
+                            CanApprove = false,
+                            CanManageRoles = false,
+                            CanProcessPayments = true,
+                            PermissionsJson = "[\"payment:process\"]",
+                            RoleName = "Finance"
+                        },
+                        new
+                        {
+                            RoleId = 5,
+                            ApprovalLimit = 9999999999999999.99m,
+                            CanApprove = true,
+                            CanManageRoles = true,
+                            CanProcessPayments = true,
+                            PermissionsJson = "[\"*\"]",
+                            RoleName = "Admin"
+                        });
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ToolExecution", b =>
+                {
+                    b.Property<Guid>("ToolExecutionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RequestJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResponseJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ToolName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WorkflowStepId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ToolExecutionId");
+
+                    b.HasIndex("WorkflowStepId");
+
+                    b.ToTable("ToolExecutions");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ValidationResult", b =>
+                {
+                    b.Property<Guid>("ValidationResultId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DetailsJson")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Validator")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WorkflowStepId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ValidationResultId");
+
+                    b.HasIndex("WorkflowStepId");
+
+                    b.ToTable("ValidationResults");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowExecution", b =>
+                {
+                    b.Property<Guid>("WorkflowExecutionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExpenseClaimId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Objective")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("WorkflowExecutionId");
+
+                    b.HasIndex("ExpenseClaimId");
+
+                    b.ToTable("WorkflowExecutions");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowStep", b =>
+                {
+                    b.Property<Guid>("WorkflowStepId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InputSnapshotJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OutputSnapshotJson")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WorkflowExecutionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("WorkflowStepId");
+
+                    b.HasIndex("WorkflowExecutionId");
+
+                    b.ToTable("WorkflowSteps");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalProcess", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ApprovalWorkflowTemplate", "Template")
+                        .WithMany()
+                        .HasForeignKey("ApprovalWorkflowTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExpenseGuard.Api.Models.Reimbursement", "Reimbursement")
+                        .WithMany("ApprovalProcesses")
+                        .HasForeignKey("ReimbursementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Reimbursement");
+
+                    b.Navigation("Template");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalStageDefinition", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ApprovalWorkflowTemplate", "Template")
+                        .WithMany("Stages")
+                        .HasForeignKey("ApprovalWorkflowTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Template");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalStep", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ApprovalProcess", "ApprovalProcess")
+                        .WithMany("Steps")
+                        .HasForeignKey("ApprovalProcessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExpenseGuard.Api.Models.Employee", "DecidedByEmployee")
+                        .WithMany()
+                        .HasForeignKey("DecidedByEmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ApprovalProcess");
+
+                    b.Navigation("DecidedByEmployee");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalWorkflowTemplate", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId");
+
+                    b.Navigation("Department");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.AuditLog", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Budget", b =>
@@ -357,6 +891,17 @@ namespace ExpenseGuard.Api.Migrations
                     b.Navigation("ExpenseClaim");
                 });
 
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PaymentTransaction", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Reimbursement", "Reimbursement")
+                        .WithMany("PaymentTransactions")
+                        .HasForeignKey("ReimbursementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reimbursement");
+                });
+
             modelBuilder.Entity("ExpenseGuard.Api.Models.Policy", b =>
                 {
                     b.HasOne("ExpenseGuard.Api.Models.Department", "Department")
@@ -376,6 +921,60 @@ namespace ExpenseGuard.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("ExpenseClaim");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ToolExecution", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.WorkflowStep", "WorkflowStep")
+                        .WithMany("ToolExecutions")
+                        .HasForeignKey("WorkflowStepId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkflowStep");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ValidationResult", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.WorkflowStep", "WorkflowStep")
+                        .WithMany("ValidationResults")
+                        .HasForeignKey("WorkflowStepId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkflowStep");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowExecution", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
+                        .WithMany()
+                        .HasForeignKey("ExpenseClaimId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseClaim");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowStep", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.WorkflowExecution", "WorkflowExecution")
+                        .WithMany("Steps")
+                        .HasForeignKey("WorkflowExecutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkflowExecution");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalProcess", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ApprovalWorkflowTemplate", b =>
+                {
+                    b.Navigation("Stages");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Department", b =>
@@ -401,9 +1000,28 @@ namespace ExpenseGuard.Api.Migrations
                     b.Navigation("Reimbursement");
                 });
 
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Reimbursement", b =>
+                {
+                    b.Navigation("ApprovalProcesses");
+
+                    b.Navigation("PaymentTransactions");
+                });
+
             modelBuilder.Entity("ExpenseGuard.Api.Models.Role", b =>
                 {
                     b.Navigation("Employees");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowExecution", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowStep", b =>
+                {
+                    b.Navigation("ToolExecutions");
+
+                    b.Navigation("ValidationResults");
                 });
 #pragma warning restore 612, 618
         }

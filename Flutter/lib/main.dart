@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'auth/auth_provider.dart';
+import 'screens/login_screen.dart';
 import 'screens/my_claims_screen.dart';
 import 'screens/claim_detail_screen.dart';
 import 'screens/reimbursement_status_screen.dart';
@@ -7,34 +10,46 @@ import 'screens/payment_status_screen.dart';
 import 'screens/history_screen.dart';
 
 void main() {
-  runApp(const ReimbursementApp());
+  runApp(const ProviderScope(child: ReimbursementApp()));
 }
 
-class ReimbursementApp extends StatelessWidget {
+class ReimbursementApp extends ConsumerWidget {
   const ReimbursementApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+    if (auth.isLoading) {
+      return MaterialApp(theme: _buildTheme(), home: const Scaffold(
+        body: Center(child: CircularProgressIndicator())));
+    }
+    final signedIn = auth.value != null;
+    final router = GoRouter(
+      initialLocation: signedIn ? '/claims' : '/login',
+      redirect: (context, state) {
+        final atLogin = state.matchedLocation == '/login';
+        if (!signedIn && !atLogin) return '/login';
+        if (signedIn && atLogin) return '/claims';
+        return null;
+      },
+      routes: [
+        GoRoute(path: '/login', builder: (ctx, state) => const LoginScreen()),
+        GoRoute(path: '/claims', builder: (ctx, state) => const MyClaimsScreen()),
+        GoRoute(path: '/claims/:id', builder: (ctx, state) => ClaimDetailScreen(claimId: state.pathParameters['id']!)),
+        GoRoute(path: '/reimbursement/:id', builder: (ctx, state) => ReimbursementStatusScreen(reimbursementId: state.pathParameters['id']!)),
+        GoRoute(path: '/payment/:id', builder: (ctx, state) => PaymentStatusScreen(reimbursementId: state.pathParameters['id']!)),
+        GoRoute(path: '/history', builder: (ctx, state) => const HistoryScreen()),
+      ],
+    );
     return MaterialApp.router(
       title: 'ReimbursementBudget',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
-      routerConfig: _router,
+      routerConfig: router,
     );
   }
 
-  static final _router = GoRouter(
-    initialLocation: '/claims',
-    routes: [
-      GoRoute(path: '/claims', builder: (ctx, state) => const MyClaimsScreen()),
-      GoRoute(path: '/claims/:id', builder: (ctx, state) => ClaimDetailScreen(claimId: state.pathParameters['id']!)),
-      GoRoute(path: '/reimbursement/:id', builder: (ctx, state) => ReimbursementStatusScreen(reimbursementId: state.pathParameters['id']!)),
-      GoRoute(path: '/payment/:id', builder: (ctx, state) => PaymentStatusScreen(reimbursementId: state.pathParameters['id']!)),
-      GoRoute(path: '/history', builder: (ctx, state) => const HistoryScreen()),
-    ],
-  );
-
-  ThemeData _buildTheme() {
+  static ThemeData _buildTheme() {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(

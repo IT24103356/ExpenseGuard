@@ -3,21 +3,38 @@ import axios from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({ baseURL: BASE_URL });
+let onUnauthorized = null;
 
-// Attach JWT from localStorage on every request
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('jwt_token');
+  let token = null;
+  try { token = JSON.parse(localStorage.getItem('expenseguard.session'))?.token; } catch { /* invalid storage is handled by auth bootstrap */ }
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// ─── Reimbursements ──────────────────────────────────────────────────────────
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) onUnauthorized?.();
+    return Promise.reject(error);
+  },
+);
+
+export const setUnauthorizedHandler = handler => { onUnauthorized = handler; };
+export const loginRequest = credentials => api.post('/auth/login', credentials);
+
 export const getFinanceQueue = (params) => api.get('/reimbursements/finance-queue', { params });
+export const getApprovalQueue = () => api.get('/reimbursements/approval-queue');
 export const getReimbursement = (id) => api.get(`/reimbursements/${id}`);
-export const getReimbursementByClaim = (claimId) => api.get(`/reimbursements/by-claim/${claimId}`);
 export const getEmployeeReimbursements = (employeeId) => api.get(`/reimbursements/employee/${employeeId}`);
 export const processReimbursement = (id) => api.post(`/reimbursements/${id}/process`);
 export const submitPayment = (id) => api.post(`/reimbursements/${id}/payment`);
+export const startApproval = (id, templateId) => api.post(`/reimbursements/${id}/approval-process`, null, { params: { templateId } });
+export const decideReimbursement = (id, decision, comment) =>
+  api.post(`/reimbursements/${id}/${decision}`, comment || null, { headers: { 'Content-Type': 'application/json' } });
+
+export const getRoles = () => api.get('/roles');
+export const assignRole = (employeeId, roleId) => api.put(`/roles/employees/${employeeId}`, { roleId });
 
 // ─── Budgets ─────────────────────────────────────────────────────────────────
 export const getAllBudgets = (fiscalYear) => api.get('/budgets', { params: { fiscalYear } });
@@ -36,10 +53,9 @@ export const getReimbursementSummary = (params) => api.get('/reports/reimburseme
 export const getPaymentSummary = (params) => api.get('/reports/payment-summary', { params });
 export const getFinanceDashboard = (fiscalYear) => api.get('/reports/finance-dashboard', { params: { fiscalYear } });
 
-// ─── Workflows ───────────────────────────────────────────────────────────────
-export const startWorkflow = (data) => api.post('/workflows/start', data);
+// Canonical workflow/audit read endpoints.
+export const getWorkflows = () => api.get('/workflows');
 export const getWorkflow = (id) => api.get(`/workflows/${id}`);
-export const getWorkflowByClaim = (claimId) => api.get(`/workflows/by-claim/${claimId}`);
-export const submitApproval = (id, data) => api.post(`/workflows/${id}/approval`, data);
+export const getWorkflowAudit = (id) => api.get(`/workflows/${id}/audit`);
 
 export default api;

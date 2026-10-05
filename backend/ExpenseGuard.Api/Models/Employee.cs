@@ -8,6 +8,7 @@ public class Employee
     public int RoleId { get; set; }
     public int? ManagerId { get; set; }
     public int DepartmentId { get; set; }
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public Role Role { get; set; } = null!;
