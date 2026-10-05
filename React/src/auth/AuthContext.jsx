@@ -46,6 +46,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     hasRole: (...roles) => Boolean(session && roles.includes(session.role)),
+    hasAnyRole: (...roles) => Boolean(session && roles.includes(session.role)),
   }), [session, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

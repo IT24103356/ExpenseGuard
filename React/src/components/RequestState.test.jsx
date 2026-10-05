@@ -1,17 +1,25 @@
 import { render, screen } from '@testing-library/react';
+import { afterEach } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext';
 import { AccessGate, QueryState } from './RequestState';
 
+afterEach(() => localStorage.clear());
+
 describe('role-aware request states', () => {
-  it('shows authentication guidance without a session', () => {
-    render(<AuthProvider value={{ isAuthenticated: false, roles: [], hasAnyRole: () => false }}><AccessGate roles={['Admin']}><div>secret</div></AccessGate></AuthProvider>);
-    expect(screen.getByText('Sign in required')).toBeInTheDocument();
+  it('shows authentication guidance without a session', async () => {
+    render(<AuthProvider><AccessGate roles={['Admin']}><div>secret</div></AccessGate></AuthProvider>);
+    expect(await screen.findByText('Sign in required')).toBeInTheDocument();
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
   });
 
-  it('shows forbidden guidance for the wrong role', () => {
-    render(<AuthProvider value={{ isAuthenticated: true, roles: ['Employee'], hasAnyRole: (...roles) => roles.includes('Employee') }}><AccessGate roles={['Admin']}><div>secret</div></AccessGate></AuthProvider>);
-    expect(screen.getByText('Access denied')).toBeInTheDocument();
+  it('shows forbidden guidance for the wrong role', async () => {
+    localStorage.setItem('expenseguard.session', JSON.stringify({
+      token: 'token', username: 'emp', role: 'Employee', employeeId: 1,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    }));
+    render(<AuthProvider><AccessGate roles={['Admin']}><div>secret</div></AccessGate></AuthProvider>);
+    expect(await screen.findByText('Access denied')).toBeInTheDocument();
+    expect(screen.queryByText('secret')).not.toBeInTheDocument();
   });
 
   it('uses a safe message for service failures', () => {
@@ -19,4 +27,3 @@ describe('role-aware request states', () => {
     expect(screen.getByText(/No changes were assumed/)).toBeInTheDocument();
   });
 });
-
