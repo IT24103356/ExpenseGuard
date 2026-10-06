@@ -54,6 +54,7 @@ export const deleteClaim = (id) => data(api.delete(`/claims/${id}`));
 export const getClaimHistory = (id) => data(api.get(`/claims/${id}/history`));
 export const getPurchaseRequestHistory = (id) => data(api.get(`/purchase-requests/${id}/history`));
 export const getRequestHistory = (params) => data(api.get('/request-history', { params }));
+export const getClaimReceipts = (id) => data(api.get(`/claims/${id}/receipts`));
 export const uploadReceipt = (id, file) => {
   const body = new FormData();
   body.append('file', file);

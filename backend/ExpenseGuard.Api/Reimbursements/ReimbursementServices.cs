@@ -42,7 +42,11 @@ public sealed class DeterministicPaymentProvider : IPaymentProvider
 
 public record ReimbursementDto(int Id, int ExpenseClaimId, int EmployeeId, int DepartmentId,
     decimal Amount, string Currency, string Status, Guid? PaymentId, string? PaymentReference,
-    string? CurrentRequiredRole = null, IReadOnlyList<PurchaseRequestApprovalStepDto>? ApprovalSteps = null);
+    string? CurrentRequiredRole = null, IReadOnlyList<PurchaseRequestApprovalStepDto>? ApprovalSteps = null,
+    string? EmployeeName = null, string? DepartmentName = null, string? Category = null,
+    string? Description = null, string? Vendor = null, string? FailureReason = null,
+    bool HasFlags = false, PurchaseRequestReviewDto? Review = null,
+    IReadOnlyList<ReceiptDto>? Receipts = null);
 public record CreateReimbursementRequest(int ExpenseClaimId, string Currency = "LKR");
 public record ApprovalDecision(string Decision, string? Comment);
 
@@ -83,25 +87,54 @@ public sealed class ReimbursementService(
         return Map(reimbursement)!;
     }
 
-    public async Task<ReimbursementDto?> GetAsync(int id, CancellationToken ct) =>
-        Map(await db.Reimbursements.Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee)
+    public async Task<ReimbursementDto?> GetAsync(int id, CancellationToken ct)
+    {
+        var reimbursement = await db.Reimbursements
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee).ThenInclude(e => e.Department)
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee).ThenInclude(e => e.Designation)
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.Receipts)
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.PolicyEvaluations).ThenInclude(p => p.Violations)
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.PolicyEvaluations).ThenInclude(p => p.Policy)
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.FraudEvaluations).ThenInclude(f => f.Flags)
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.FraudFlags)
             .Include(r => r.ApprovalProcesses).ThenInclude(p => p.Steps)
-            .SingleOrDefaultAsync(r => r.ReimbursementId == id, ct));
+            .SingleOrDefaultAsync(r => r.ReimbursementId == id, ct);
+        if (reimbursement is null) return null;
+        var claim = reimbursement.ExpenseClaim;
+        var ai = ClaimReviewComposer.AiSummaries(await db.WorkflowSteps.AsNoTracking()
+            .Where(s => s.WorkflowExecution.ExpenseClaimId == claim.ExpenseClaimId).ToListAsync(ct));
+        var reserved = string.IsNullOrWhiteSpace(reimbursement.FailureReason);
+        var review = ClaimReviewComposer.Compose(
+            claim,
+            claim.PolicyEvaluations.OrderByDescending(p => p.EvaluatedAt).FirstOrDefault(),
+            claim.FraudEvaluations.OrderByDescending(f => f.EvaluatedAt).FirstOrDefault(),
+            reserved, reimbursement.FailureReason, ai);
+        return Map(reimbursement, review, claim.Receipts.OrderBy(x => x.ReceiptId).Select(ReceiptService.ToDto).ToList());
+    }
 
     public async Task<IReadOnlyList<ReimbursementDto>> ListForEmployeeAsync(int employeeId, CancellationToken ct) =>
         await db.Reimbursements.AsNoTracking().Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee)
             .Where(r => r.ExpenseClaim.EmployeeId == employeeId).OrderByDescending(r => r.RequestedAt)
             .Select(r => new ReimbursementDto(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
-                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference, null, null))
+                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference,
+                null, null, null, null, null, null, null, null, false, null, null))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ReimbursementDto>> FinanceQueueAsync(string? status, CancellationToken ct)
     {
-        var query = db.Reimbursements.AsNoTracking().Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee).AsQueryable();
+        var query = db.Reimbursements.AsNoTracking()
+            .Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee).ThenInclude(e => e.Department)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(r => r.Status == status.ToUpperInvariant());
         return await query.OrderBy(r => r.RequestedAt)
             .Select(r => new ReimbursementDto(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
-                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference, null, null))
+                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference,
+                null, null,
+                r.ExpenseClaim.Employee.FullName,
+                r.ExpenseClaim.Employee.Department != null
+                    ? r.ExpenseClaim.Employee.Department.DepartmentName : null,
+                r.ExpenseClaim.Category, r.ExpenseClaim.Description, r.ExpenseClaim.Vendor,
+                r.FailureReason, false, null, null))
             .ToListAsync(ct);
     }
 
@@ -121,7 +154,18 @@ public sealed class ReimbursementService(
                 p.Reimbursement.PaymentId,
                 p.Reimbursement.PaymentReference,
                 p.Steps.Where(s => s.Sequence == p.CurrentSequence).Select(s => s.RequiredRole).FirstOrDefault(),
-                null))
+                null,
+                p.Reimbursement.ExpenseClaim.Employee.FullName,
+                p.Reimbursement.ExpenseClaim.Employee.Department != null
+                    ? p.Reimbursement.ExpenseClaim.Employee.Department.DepartmentName : null,
+                p.Reimbursement.ExpenseClaim.Category,
+                p.Reimbursement.ExpenseClaim.Description,
+                p.Reimbursement.ExpenseClaim.Vendor,
+                p.Reimbursement.FailureReason,
+                p.Reimbursement.FailureReason != null
+                    || p.Reimbursement.ExpenseClaim.PolicyEvaluations.Any(e => e.Outcome == "non_compliant")
+                    || p.Reimbursement.ExpenseClaim.FraudEvaluations.Any(e => e.RiskLevel == "high" || e.RiskLevel == "critical"),
+                null, null))
             .ToListAsync(ct);
 
     public async Task<ReimbursementDto> StartApprovalAsync(int id, int templateId, CancellationToken ct)
@@ -318,7 +362,8 @@ public sealed class ReimbursementService(
             .SingleOrDefaultAsync(r => r.ReimbursementId == id, ct)
         ?? throw new KeyNotFoundException("Reimbursement not found.");
 
-    private static ReimbursementDto? Map(Reimbursement? r)
+    private static ReimbursementDto? Map(Reimbursement? r,
+        PurchaseRequestReviewDto? review = null, IReadOnlyList<ReceiptDto>? receipts = null)
     {
         if (r is null) return null;
         var process = r.ApprovalProcesses?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
@@ -328,8 +373,11 @@ public sealed class ReimbursementService(
         var steps = process?.Steps.OrderBy(s => s.Sequence)
             .Select(s => new PurchaseRequestApprovalStepDto(s.Sequence, s.RequiredRole, s.Status, s.Comment, s.DecidedByEmployeeId, s.DecidedAt))
             .ToList();
-        return new(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
-            r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference,
-            current, steps);
+        var claim = r.ExpenseClaim;
+        return new(r.ReimbursementId, r.ExpenseClaimId, claim.EmployeeId,
+            claim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference,
+            current, steps, claim.Employee.FullName, claim.Employee.Department?.DepartmentName,
+            claim.Category, claim.Description, claim.Vendor, r.FailureReason,
+            review?.HasFlags == true, review, receipts);
     }
 }

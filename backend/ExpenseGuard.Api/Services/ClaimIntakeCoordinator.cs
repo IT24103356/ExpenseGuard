@@ -11,6 +11,7 @@ namespace ExpenseGuard.Api.Services;
 public interface IClaimIntakeCoordinator
 {
     Task AfterSubmitAsync(int claimId, int actorId, CancellationToken ct);
+    Task RecoverMissingApprovalsAsync(CancellationToken ct);
 }
 
 public sealed class ClaimIntakeCoordinator(
@@ -45,6 +46,7 @@ public sealed class ClaimIntakeCoordinator(
             WorkflowId = correlation,
             ExpenseClaimId = claimId,
             Objective = $"Review {claim.Category} {claim.Flow} claim {claimId}",
+            Description = claim.Description ?? "",
             ReceiptText = receipt?.ExtractedText ?? receipt?.ExtractedVendor ?? "",
             Amount = claim.Amount,
             Category = string.IsNullOrWhiteSpace(claim.Category) ? "Unknown" : claim.Category,
@@ -138,20 +140,31 @@ public sealed class ClaimIntakeCoordinator(
         if (!reserved)
         {
             var entity = await db.Reimbursements.SingleAsync(r => r.ReimbursementId == reimbursement.Id, ct);
-            entity.Status = ReimbursementStatuses.BudgetReviewRequired;
             entity.FailureReason = "No active budget could reserve the claim amount.";
             await db.SaveChangesAsync(ct);
-            await MoveClaimAsync(claim, actorId, ClaimStatus.UnderReview, "Budget review required.", ct);
-            await workflows.SetStatusAsync(claimId, "BUDGET_REVIEW_REQUIRED", ct);
-            return;
         }
 
         var templateId = await EnsureApprovalTemplateAsync(ct);
         await reimbursements.StartApprovalAsync(reimbursement.Id, templateId, ct);
         await workflows.CompleteStepAsync(execution.WorkflowExecutionId, 5, "HumanApproval", "HUMAN_APPROVAL",
-            "WAITING_FOR_HUMAN", new { reimbursement.Id, templateId }, ct);
-        await MoveClaimAsync(claim, actorId, ClaimStatus.UnderReview, "Waiting for human approval.", ct);
+            "WAITING_FOR_HUMAN", new { reimbursement.Id, templateId, reserved }, ct);
+        await MoveClaimAsync(claim, actorId, ClaimStatus.UnderReview,
+            reserved ? "Waiting for human approval." : "Budget could not be reserved. Waiting for human approval.", ct);
         await workflows.SetStatusAsync(claimId, "WAITING_FOR_APPROVAL", ct);
+    }
+
+    public async Task RecoverMissingApprovalsAsync(CancellationToken ct)
+    {
+        var templateId = await EnsureApprovalTemplateAsync(ct);
+        var stuckIds = await db.Reimbursements
+            .Where(r => r.DeletedAt == null
+                && r.ExpenseClaim.DeletedAt == null
+                && r.ExpenseClaim.Status == ClaimStatus.UnderReview
+                && !r.ApprovalProcesses.Any(p => p.Status == ApprovalStatuses.Pending))
+            .Select(r => r.ReimbursementId)
+            .ToListAsync(ct);
+        foreach (var id in stuckIds)
+            await reimbursements.StartApprovalAsync(id, templateId, ct);
     }
 
     private async Task<bool> ReserveAsync(ExpenseClaim claim, CancellationToken ct)

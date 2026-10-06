@@ -33,6 +33,30 @@ public sealed class ExpenseWorkflowTests
     }
 
     [Fact]
+    public async Task Get_returns_existing_receipt_and_ocr()
+    {
+        await using var db = Db();
+        db.ExpenseClaims.Add(new ExpenseClaim { ExpenseClaimId = 10, EmployeeId = 1, Category = "Meals" });
+        db.Receipts.Add(new Receipt
+        {
+            ReceiptId = 4, ExpenseClaimId = 10, StorageUrl = "https://files.example/lunch.jpg",
+            PublicId = "lunch", FileName = "lunch.jpg", ContentType = "image/jpeg", Sha256 = "abc",
+            ExtractedVendor = "Cafe", ExtractedAmount = 42.25m, ExtractedText = "Cafe\nTotal 42.25"
+        });
+        await db.SaveChangesAsync();
+
+        var loaded = await new ClaimService(db).GetAsync(10, 1, default);
+
+        var receipt = Assert.Single(loaded.Receipts!);
+        Assert.Equal("lunch.jpg", receipt.FileName);
+        Assert.Equal("Cafe", receipt.ExtractedVendor);
+        Assert.Equal(42.25m, receipt.ExtractedAmount);
+        Assert.Equal("Cafe\nTotal 42.25", receipt.ExtractedText);
+        Assert.Equal("Cafe", (await new ReceiptService(db, new FakeReceiptStorage(), new FakeReceiptOcr())
+            .ListAsync(10, 1, default)).Single().ExtractedVendor);
+    }
+
+    [Fact]
     public async Task Submission_requires_receipt_and_records_transition()
     {
         await using var db = Db();

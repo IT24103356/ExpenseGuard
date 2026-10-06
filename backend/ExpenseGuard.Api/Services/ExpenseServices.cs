@@ -308,7 +308,17 @@ public sealed class ClaimService(AppDbContext db, IClaimIntakeCoordinator? coord
     }
 
     public async Task<ClaimDto> GetAsync(int id, int actorId, CancellationToken ct)
-        => (await WithApprovalAsync([await Owned(id, actorId, ct)], ct)).Single();
+    {
+        var claim = await db.ExpenseClaims.Include(c => c.Receipts)
+            .SingleOrDefaultAsync(c => c.ExpenseClaimId == id && c.DeletedAt == null, ct)
+            ?? throw new KeyNotFoundException("Claim not found.");
+        if (claim.EmployeeId != actorId) throw new UnauthorizedAccessException("Claim is owned by another employee.");
+        var dto = (await WithApprovalAsync([claim], ct)).Single();
+        return dto with
+        {
+            Receipts = claim.Receipts.OrderBy(r => r.ReceiptId).Select(ReceiptService.ToDto).ToList()
+        };
+    }
 
     public async Task<ClaimDto> CreateAsync(ClaimWriteDto input, int actorId, CancellationToken ct)
     {

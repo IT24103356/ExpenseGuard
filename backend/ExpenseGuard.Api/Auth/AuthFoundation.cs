@@ -63,6 +63,12 @@ public static class ClaimsPrincipalExtensions
 
     public static bool CanAccessEmployee(this ClaimsPrincipal user, int employeeId) =>
         user.EmployeeId() == employeeId || user.IsInRole(RoleNames.Admin) || user.IsInRole(RoleNames.Finance);
+
+    public static string RoleName(this ClaimsPrincipal user) =>
+        user.FindFirstValue(ClaimTypes.Role)
+        ?? user.FindFirstValue("role")
+        ?? user.Claims.FirstOrDefault(c => c.Type.EndsWith("/role", StringComparison.OrdinalIgnoreCase))?.Value
+        ?? string.Empty;
 }
 
 public sealed class OwnsReimbursementRequirement : IAuthorizationRequirement;
@@ -86,8 +92,8 @@ public sealed class OwnsReimbursementHandler(AppDbContext db)
             return;
         }
 
-        var role = context.User.FindFirstValue(ClaimTypes.Role);
-        if (role is not null && await db.ApprovalProcesses.AnyAsync(p =>
+        var role = context.User.RoleName();
+        if (!string.IsNullOrWhiteSpace(role) && await db.ApprovalProcesses.AnyAsync(p =>
                 p.ReimbursementId == reimbursementId &&
                 p.Status == ApprovalStatuses.Pending &&
                 p.Steps.Any(s => s.Sequence == p.CurrentSequence && s.RequiredRole == role)))

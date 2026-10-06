@@ -60,7 +60,8 @@ public sealed record ClaimDto(
     int ExpenseClaimId, int EmployeeId, int? PurchaseRequestId, decimal Amount, string Category,
     string Description, string Currency, string? Vendor, DateTime? PurchaseDate, ClaimFlow Flow,
     ClaimStatus Status, long Version, string? CurrentRequiredRole = null,
-    IReadOnlyList<PurchaseRequestApprovalStepDto>? ApprovalSteps = null);
+    IReadOnlyList<PurchaseRequestApprovalStepDto>? ApprovalSteps = null,
+    IReadOnlyList<ReceiptDto>? Receipts = null);
 
 public sealed class ReceiptCorrectionDto
 {

@@ -126,6 +126,7 @@ function ClaimsPanel() {
   const [filters, setFilters] = useState({ status: '', category: '', from: '', to: '' });
   const [form, setForm] = useState(emptyClaim);
   const [receiptFile, setReceiptFile] = useState(null);
+  const [receiptInputKey, setReceiptInputKey] = useState(0);
   const params = Object.fromEntries(Object.entries({
     ...filters,
     status: filters.status ? claimStatuses.indexOf(filters.status) : '',
@@ -139,7 +140,7 @@ function ClaimsPanel() {
       await uploadReceipt(claim.expenseClaimId, file);
       return claim;
     },
-    onSuccess: () => { setForm(emptyClaim); setReceiptFile(null); refresh(); },
+    onSuccess: () => { setForm(emptyClaim); setReceiptFile(null); setReceiptInputKey(key => key + 1); refresh(); },
   });
   const submit = useMutation({ mutationFn: submitClaim, onSuccess: refresh });
   const remove = useMutation({ mutationFn: deleteClaim, onSuccess: refresh });
@@ -174,12 +175,12 @@ function ClaimsPanel() {
           <select className="form-control" required value={form.purchaseRequestId} onChange={e => setForm({ ...form, purchaseRequestId: e.target.value })}>
             <option value="">Select request</option>{requests.data?.filter(x => enumLabel(x.status, requestStatuses) === 'Approved').map(x => <option key={x.purchaseRequestId} value={x.purchaseRequestId}>{x.description}</option>)}
           </select></label>}
-        <label className="form-group">
+        <div className="form-group">
           <span className="form-label">Receipt photo</span>
-          <input key={receiptFile?.name ?? 'no-receipt'} className="form-control" type="file" accept="image/jpeg,image/png,image/*,.pdf,application/pdf" required
+          <input key={receiptInputKey} className="form-control" type="file" accept="image/jpeg,image/png,image/*,.pdf,application/pdf" required
             aria-label="Receipt photo" onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
           <small className="employee-secondary">{receiptFile ? receiptFile.name : 'JPEG, PNG, or PDF. Required before you can submit.'}</small>
-        </label>
+        </div>
         {create.isError && <div className="alert alert-danger">{apiErrorMessage(create.error, 'Could not save the draft.')}</div>}
         <button className="btn btn-primary" disabled={create.isPending}>{create.isPending ? 'Saving draft…' : 'Save draft'}</button>
       </form>

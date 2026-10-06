@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ExpenseGuard.Api.Auth;
 using ExpenseGuard.Api.Models;
 using ExpenseGuard.Api.Reimbursements;
+using ExpenseGuard.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,7 @@ namespace ExpenseGuard.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/reimbursements")]
-public sealed class ReimbursementsController(IReimbursementService service, IAuthorizationService authorization) : ControllerBase
+public sealed class ReimbursementsController(IReimbursementService service, IAuthorizationService authorization, IClaimIntakeCoordinator intake) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = RoleNames.Employee + "," + RoleNames.Admin)]
@@ -34,9 +35,11 @@ public sealed class ReimbursementsController(IReimbursementService service, IAut
 
     [HttpGet("approval-queue")]
     [Authorize(Policy = "CanApprove")]
-    public async Task<ActionResult<IReadOnlyList<ReimbursementDto>>> ApprovalQueue(CancellationToken ct) =>
-        Ok(await service.ApprovalQueueAsync(
-            User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct));
+    public async Task<ActionResult<IReadOnlyList<ReimbursementDto>>> ApprovalQueue(CancellationToken ct)
+    {
+        await intake.RecoverMissingApprovalsAsync(ct);
+        return Ok(await service.ApprovalQueueAsync(User.RoleName(), ct));
+    }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReimbursementDto>> Get(int id, CancellationToken ct)
@@ -79,7 +82,7 @@ public sealed class ReimbursementsController(IReimbursementService service, IAut
 
     private async Task<ActionResult<ReimbursementDto>> Decide(int id, string decision, string? comment, CancellationToken ct)
     {
-        var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        var role = User.RoleName();
         return Ok(await service.DecideAsync(id, User.EmployeeId(), role, new ApprovalDecision(decision, comment), ct));
     }
 }

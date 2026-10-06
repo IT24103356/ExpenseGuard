@@ -29,15 +29,15 @@ public sealed class PurchaseRequestsController(IPurchaseRequestService requests,
     [HttpGet("approval-queue")]
     [Authorize(Policy = "CanApprove")]
     public Task<IReadOnlyList<PurchaseRequestDto>> ApprovalQueue(CancellationToken ct) =>
-        requests.ApprovalQueueAsync(User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
+        requests.ApprovalQueueAsync(User.RoleName(), ct);
 
     [HttpGet("{id:int}")]
     public Task<PurchaseRequestDto> Get(int id, CancellationToken ct)
-        => requests.GetForApprovalAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
+        => requests.GetForApprovalAsync(id, actor.EmployeeId, User.RoleName(), ct);
 
     [HttpGet("{id:int}/history")]
     public Task<IReadOnlyList<PurchaseRequestHistoryDto>> History(int id, CancellationToken ct)
-        => requests.HistoryAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
+        => requests.HistoryAsync(id, actor.EmployeeId, User.RoleName(), ct);
 
     [HttpPost]
     public async Task<ActionResult<PurchaseRequestDto>> Create(PurchaseRequestWriteDto input, CancellationToken ct)
@@ -80,7 +80,7 @@ public sealed class PurchaseRequestsController(IPurchaseRequestService requests,
     }
 
     private Task<PurchaseRequestDto> Decide(int id, string decision, string? comment, CancellationToken ct) =>
-        requests.DecideAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty,
+        requests.DecideAsync(id, actor.EmployeeId, User.RoleName(),
             new ApprovalDecision(decision, comment), ct);
 }
 
@@ -119,7 +119,7 @@ public sealed class ClaimsController(IClaimService claims, IReceiptService recei
 
     [HttpGet("{id:int}/history")]
     public Task<IReadOnlyList<ClaimHistoryDto>> History(int id, CancellationToken ct)
-        => claims.HistoryAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
+        => claims.HistoryAsync(id, actor.EmployeeId, User.RoleName(), ct);
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -127,6 +127,10 @@ public sealed class ClaimsController(IClaimService claims, IReceiptService recei
         await claims.DeleteAsync(id, actor.EmployeeId, ct);
         return NoContent();
     }
+
+    [HttpGet("{id:int}/receipts")]
+    public Task<IReadOnlyList<ReceiptDto>> ListReceipts(int id, CancellationToken ct)
+        => receipts.ListAsync(id, actor.EmployeeId, ct);
 
     [HttpPost("{id:int}/receipts")]
     [Consumes("multipart/form-data")]

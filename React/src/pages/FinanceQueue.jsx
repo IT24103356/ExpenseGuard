@@ -79,12 +79,12 @@ export default function FinanceQueue() {
             <tbody>
               {items.map(item => (
                 <tr key={item.id} id={`queue-row-${item.id}`}>
-                  <td>{item.employeeId}</td>
-                  <td>{item.departmentId}</td>
+                  <td>{item.employeeName || item.employeeId}</td>
+                  <td>{item.departmentName || item.departmentId}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>
-                    {item.expenseClaimId?.substring(0, 8)}…
+                    #{item.expenseClaimId}
                   </td>
-                  <td><AmountDisplay amount={item.amount} /></td>
+                  <td><AmountDisplay amount={item.amount} currency={item.currency} /></td>
                   <td><StatusBadge status={item.status} /></td>
                   <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {item.requestedAt ? new Date(item.requestedAt).toLocaleDateString() : '—'}

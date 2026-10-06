@@ -40,12 +40,14 @@ export default function ApprovalQueue() {
       </table>
     </div>}
     {claimRows.length > 0 && <div className="table-wrapper">
-      <div className="table-header"><h3>Reimbursements</h3></div>
+      <div className="table-header"><h3>Claims</h3></div>
       <table>
-        <thead><tr><th>Claim</th><th>Employee</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <thead><tr><th>Claim</th><th>Employee</th><th>Amount</th><th>AI review</th><th>Status</th><th>Action</th></tr></thead>
         <tbody>{claimRows.map(item => <tr key={`reim-${item.id}`}>
-          <td>{item.expenseClaimId}</td><td>{item.employeeId}</td>
+          <td>#{item.expenseClaimId} · {item.category || 'Claim'}</td>
+          <td>{item.employeeName || item.employeeId}<small className="employee-secondary">{item.departmentName}</small></td>
           <td><AmountDisplay amount={item.amount} currency={item.currency} /></td>
+          <td>{item.hasFlags || item.review?.hasFlags ? <StatusBadge status="flagged" /> : <StatusBadge status="clear" />}</td>
           <td><StatusBadge status={item.status} /></td>
           <td><Link className="btn btn-primary btn-sm" to={`/approvals/${item.id}`}>Review</Link></td>
         </tr>)}</tbody>

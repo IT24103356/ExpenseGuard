@@ -122,6 +122,7 @@ public sealed class FakeReceiptOcr : IReceiptOcr
 
 public interface IReceiptService
 {
+    Task<IReadOnlyList<ReceiptDto>> ListAsync(int claimId, int actorId, CancellationToken ct);
     Task<ReceiptDto> UploadAsync(int claimId, Stream content, string fileName, string contentType, long length, int actorId, CancellationToken ct);
     Task<ReceiptDto> CorrectAsync(int claimId, int receiptId, ReceiptCorrectionDto input, int actorId, CancellationToken ct);
 }
@@ -130,6 +131,16 @@ public sealed class ReceiptService(AppDbContext db, IReceiptStorage storage, IRe
 {
     private const long MaxBytes = 10 * 1024 * 1024;
     private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+
+    public async Task<IReadOnlyList<ReceiptDto>> ListAsync(int claimId, int actorId, CancellationToken ct)
+    {
+        _ = await OwnedClaim(claimId, actorId, ct);
+        var items = await db.Receipts.AsNoTracking()
+            .Where(r => r.ExpenseClaimId == claimId)
+            .OrderBy(r => r.ReceiptId)
+            .ToListAsync(ct);
+        return items.Select(ToDto).ToList();
+    }
 
     public async Task<ReceiptDto> UploadAsync(int claimId, Stream content, string fileName, string contentType, long length, int actorId, CancellationToken ct)
     {
@@ -235,7 +246,9 @@ public sealed class ReceiptService(AppDbContext db, IReceiptStorage storage, IRe
         return claim;
     }
 
-    private static ReceiptDto Map(Receipt r) => new(r.ReceiptId, r.ExpenseClaimId, r.StorageUrl, r.FileName,
+    public static ReceiptDto ToDto(Receipt r) => new(r.ReceiptId, r.ExpenseClaimId, r.StorageUrl, r.FileName,
         r.ContentType, r.SizeBytes, r.Sha256, r.ProcessingStatus, r.ExtractedVendor, r.ExtractedAmount,
         r.ExtractedDate, r.ExtractedCurrency, r.ExtractedText, r.Confidence, r.RequiresManualReview, r.CorrectedAt);
+
+    private static ReceiptDto Map(Receipt r) => ToDto(r);
 }

@@ -86,6 +86,10 @@ public sealed class AcceptanceFlowTests
         Assert.Equal(ReimbursementStatuses.PendingApproval, reimbursement.Status);
         Assert.Equal([RoleNames.Manager, RoleNames.DepartmentHead, RoleNames.Finance],
             process.Steps.OrderBy(s => s.Sequence).Select(s => s.RequiredRole).ToArray());
+        var review = await reimbursements.GetAsync(reimbursement.ReimbursementId, default);
+        Assert.NotNull(review.Review);
+        Assert.Contains("Human approval is still required", review.Review.Summary);
+        Assert.Equal(15000, review.Receipts!.Single().ExtractedAmount);
 
         await reimbursements.DecideAsync(reimbursement.ReimbursementId, people.ManagerId,
             RoleNames.Manager, new ApprovalDecision("APPROVED", "ok"), default);
@@ -153,6 +157,73 @@ public sealed class AcceptanceFlowTests
         Assert.Equal("FAILED", (await db.WorkflowExecutions.SingleAsync()).Status);
         Assert.Empty(db.Reimbursements);
         Assert.Empty(db.ApprovalProcesses);
+    }
+
+    [Fact]
+    public async Task Missing_budget_still_starts_manager_approval()
+    {
+        await using var db = Database();
+        var people = await SeedPeople(db);
+        var policy = new PolicyService(db, TimeProvider.System);
+        var fraud = new FraudService(db, TimeProvider.System);
+        var budgets = new BudgetService(db);
+        var ledger = new WorkflowLedger(db);
+        var reimbursements = new ReimbursementService(db, new BudgetServiceGateway(db, budgets),
+            new DeterministicPaymentProvider(), NullLogger<ReimbursementService>.Instance, ledger);
+        var coordinator = new ClaimIntakeCoordinator(db, policy, fraud, budgets, reimbursements, ledger);
+        var claims = new ClaimService(db, coordinator);
+
+        var created = await claims.CreateAsync(new ClaimWriteDto
+        {
+            Amount = 42.25m, Category = "Meals", Description = "Team lunch", Currency = "USD"
+        }, people.EmployeeId, default);
+        db.Receipts.Add(new Receipt
+        {
+            ExpenseClaimId = created.ExpenseClaimId, StorageUrl = "x", PublicId = "x",
+            FileName = "x.pdf", ContentType = "application/pdf", Sha256 = "hash"
+        });
+        await db.SaveChangesAsync();
+        await claims.TransitionAsync(created.ExpenseClaimId, people.EmployeeId, ClaimStatus.Submitted, null, default);
+
+        Assert.Equal(ClaimStatus.UnderReview, (await db.ExpenseClaims.SingleAsync()).Status);
+        Assert.Equal(RoleNames.Manager, (await db.ApprovalProcesses.Include(p => p.Steps).SingleAsync())
+            .Steps.Single(s => s.Sequence == 1).RequiredRole);
+        Assert.Single(await reimbursements.ApprovalQueueAsync(RoleNames.Manager, default));
+        Assert.Empty(await reimbursements.ApprovalQueueAsync(RoleNames.Finance, default));
+    }
+
+    [Fact]
+    public async Task Recover_puts_stuck_under_review_claims_on_the_manager_queue()
+    {
+        await using var db = Database();
+        var people = await SeedPeople(db);
+        var policy = new PolicyService(db, TimeProvider.System);
+        var fraud = new FraudService(db, TimeProvider.System);
+        var budgets = new BudgetService(db);
+        var ledger = new WorkflowLedger(db);
+        var reimbursements = new ReimbursementService(db, new BudgetServiceGateway(db, budgets),
+            new DeterministicPaymentProvider(), NullLogger<ReimbursementService>.Instance, ledger);
+        var coordinator = new ClaimIntakeCoordinator(db, policy, fraud, budgets, reimbursements, ledger);
+
+        var claim = new ExpenseClaim
+        {
+            EmployeeId = people.EmployeeId, Amount = 15000, Category = "Advertising",
+            Description = "social media", Currency = "USD", Status = ClaimStatus.UnderReview
+        };
+        db.ExpenseClaims.Add(claim);
+        await db.SaveChangesAsync();
+        db.Reimbursements.Add(new Reimbursement
+        {
+            ExpenseClaimId = claim.ExpenseClaimId, Total = 15000, Currency = "USD",
+            Status = ReimbursementStatuses.BudgetReviewRequired,
+            FailureReason = "No active budget could reserve the claim amount.",
+            IdempotencyKey = $"reimbursement:{claim.ExpenseClaimId}"
+        });
+        await db.SaveChangesAsync();
+
+        Assert.Empty(await reimbursements.ApprovalQueueAsync(RoleNames.Manager, default));
+        await coordinator.RecoverMissingApprovalsAsync(default);
+        Assert.Single(await reimbursements.ApprovalQueueAsync(RoleNames.Manager, default));
     }
 
     private static AppDbContext Database()
