@@ -48,7 +48,10 @@ build/
 # Temp / local
 temp_repo/
 
-# Docs / examples (not needed to build or run the code)
+# OS
+.DS_Store
+
+# Docs / examples / leftover student apps (not needed to build or run)
 Docs/
 Documentation/
 LOCAL_HANDOFF.md
@@ -56,7 +59,10 @@ LOCAL_HANDOFF.md
 React/README.md
 Flutter/README.md
 ai/expenseguard-agents/README.md
-policy_compliance_mobile/README.md
+policy_compliance_mobile/
+backend/ReimbursementBudget.API/
+backend/ReimbursementBudget.Tests/
+ai/expenseguard-agents/expenseguard_agents/
 
 # Python
 __pycache__/

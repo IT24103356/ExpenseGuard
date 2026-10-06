@@ -27,6 +27,6 @@ test = ["pytest>=8,<9", "pytest-asyncio>=0.24,<1"]
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src", "."]
+pythonpath = ["src"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
