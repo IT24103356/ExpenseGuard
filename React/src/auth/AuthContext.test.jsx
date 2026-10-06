@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 
@@ -20,7 +21,7 @@ describe('AuthProvider bootstrap', () => {
       token: 'token', username: 'alice', role: 'Employee', employeeId: 7,
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
     }));
-    render(<AuthProvider><SessionProbe /></AuthProvider>);
+    render(<QueryClientProvider client={new QueryClient()}><AuthProvider><SessionProbe /></AuthProvider></QueryClientProvider>);
     await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
   });
 
@@ -28,7 +29,7 @@ describe('AuthProvider bootstrap', () => {
     localStorage.setItem('expenseguard.session', JSON.stringify({
       token: 'token', username: 'alice', expiresAt: '2020-01-01T00:00:00Z',
     }));
-    render(<AuthProvider><SessionProbe /></AuthProvider>);
+    render(<QueryClientProvider client={new QueryClient()}><AuthProvider><SessionProbe /></AuthProvider></QueryClientProvider>);
     await waitFor(() => expect(screen.getByText('anonymous')).toBeInTheDocument());
     expect(localStorage.getItem('expenseguard.session')).toBeNull();
   });

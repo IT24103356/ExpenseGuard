@@ -73,6 +73,45 @@ public sealed class BudgetServiceTests
         await Assert.ThrowsAsync<InvalidBudgetOperationException>(() => service.DeleteAsync(created.Id, default));
     }
 
+    [Fact]
+    public async Task Allocate_rejects_when_department_total_exceeds_one_hundred_million()
+    {
+        await using var db = CreateDb();
+        var department = new Department { Code = "ENG", DepartmentName = "Engineering" };
+        db.Add(department);
+        await db.SaveChangesAsync();
+        var service = new BudgetService(db);
+
+        await service.AllocateAsync(new AllocateBudgetRequest
+        {
+            DepartmentId = department.DepartmentId, Name = "Cloud", PeriodStart = new(2026, 1, 1),
+            PeriodEnd = new(2026, 3, 31), Currency = "LKR", Amount = 60_000_000m
+        }, default);
+
+        await Assert.ThrowsAsync<InvalidBudgetOperationException>(() => service.AllocateAsync(new AllocateBudgetRequest
+        {
+            DepartmentId = department.DepartmentId, Name = "Tooling", PeriodStart = new(2026, 4, 1),
+            PeriodEnd = new(2026, 6, 30), Currency = "LKR", Amount = 50_000_000m
+        }, default));
+    }
+
+    [Fact]
+    public async Task Utilization_includes_what_the_budget_is_for()
+    {
+        await using var db = CreateDb();
+        var department = new Department { Code = "ENG", DepartmentName = "Engineering" };
+        var budget = NewBudget(1_000m);
+        budget.Name = "Product engineering, cloud and tooling — Q1 2026";
+        budget.Department = department;
+        db.AddRange(department, budget);
+        await db.SaveChangesAsync();
+
+        var page = await new BudgetService(db).UtilizationAsync(1, 10, null, default);
+
+        Assert.Equal("Engineering", page.Items[0].DepartmentName);
+        Assert.Equal("Product engineering, cloud and tooling — Q1 2026", page.Items[0].BudgetName);
+    }
+
     private static Budget NewBudget(decimal allocated) => new()
     {
         Name = "Operations", PeriodStart = new(2026, 1, 1), PeriodEnd = new(2026, 12, 31),

@@ -6,6 +6,9 @@ const navItems = [
   { section: 'Employee', items: [
     { to: '/employee', icon: <FiUser />, label: 'My Expenses', id: 'nav-employee' },
   ]},
+  { section: 'Approvals', items: [
+    { to: '/approvals', icon: <FiList />, label: 'Approval Queue', id: 'nav-approvals', roles: ['Manager', 'DepartmentHead', 'Finance', 'Admin'] },
+  ]},
   { section: 'Finance', items: [
     { to: '/', icon: <FiGrid />, label: 'Dashboard', id: 'nav-dashboard' },
     { to: '/finance-queue', icon: <FiList />, label: 'Processing Queue', id: 'nav-queue', roles: ['Finance', 'Admin'] },

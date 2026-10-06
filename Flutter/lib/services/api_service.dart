@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class ApiException implements Exception {
   final int statusCode;
@@ -12,10 +13,7 @@ class ApiException implements Exception {
 class ApiService {
   ApiService({http.Client? client, String? baseUrl, this.token})
       : client = client ?? http.Client(),
-        baseUrl = baseUrl ?? const String.fromEnvironment(
-          'EXPENSEGUARD_API_URL',
-          defaultValue: 'http://10.0.2.2:5000/api',
-        );
+        baseUrl = baseUrl ?? expenseGuardApiBaseUrl();
 
   final http.Client client;
   final String baseUrl;

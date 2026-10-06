@@ -60,17 +60,26 @@ public static class ApprovalStatuses
     public const string RevisionRequired = "REVISION_REQUIRED";
 }
 
+public static class WorkflowSubjects
+{
+    public const string Claim = "claim";
+    public const string PurchaseRequest = "purchase_request";
+}
+
 public class WorkflowExecution
 {
     public Guid WorkflowExecutionId { get; set; } = Guid.NewGuid();
-    public int ExpenseClaimId { get; set; }
+    public int? ExpenseClaimId { get; set; }
+    public int? PurchaseRequestId { get; set; }
+    public string SubjectType { get; set; } = WorkflowSubjects.Claim;
     public string Objective { get; set; } = string.Empty;
     public string Status { get; set; } = "CREATED";
     public string CorrelationId { get; set; } = Guid.NewGuid().ToString("N");
     public string? StateJson { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public ExpenseClaim ExpenseClaim { get; set; } = null!;
+    public ExpenseClaim? ExpenseClaim { get; set; }
+    public PurchaseRequest? PurchaseRequest { get; set; }
     public ICollection<WorkflowStep> Steps { get; set; } = [];
 }
 

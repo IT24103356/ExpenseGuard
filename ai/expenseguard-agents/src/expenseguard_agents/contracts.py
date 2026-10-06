@@ -1,4 +1,5 @@
 from typing import Any, Literal, TypedDict
+from decimal import Decimal
 from pydantic import BaseModel, Field
 
 
@@ -20,6 +21,13 @@ class CoordinatorRequest(BaseModel):
     expense_claim_id: int
     reimbursement_id: int
     objective: str
+    receipt_text: str = ""
+    amount: Decimal = Decimal("0")
+    category: str = "Unknown"
+    currency: str = "LKR"
+    vendor: str | None = None
+    policies: list[dict[str, Any]] = Field(default_factory=list)
+    budgets: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class CoordinatorState(TypedDict, total=False):

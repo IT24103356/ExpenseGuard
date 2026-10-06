@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
     public DbSet<PurchaseRequest> PurchaseRequests => Set<PurchaseRequest>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<ClaimStatusHistory> ClaimStatusHistories => Set<ClaimStatusHistory>();
+    public DbSet<PurchaseRequestStatusHistory> PurchaseRequestStatusHistories => Set<PurchaseRequestStatusHistory>();
     public DbSet<ApprovalWorkflowTemplate> ApprovalWorkflowTemplates => Set<ApprovalWorkflowTemplate>();
     public DbSet<ApprovalStageDefinition> ApprovalStageDefinitions => Set<ApprovalStageDefinition>();
     public DbSet<ApprovalProcess> ApprovalProcesses => Set<ApprovalProcess>();
@@ -100,6 +101,14 @@ public class AppDbContext : DbContext
             .WithMany(c => c.StatusHistory)
             .HasForeignKey(h => h.ExpenseClaimId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PurchaseRequestStatusHistory>()
+            .HasOne(h => h.PurchaseRequest)
+            .WithMany(p => p.StatusHistory)
+            .HasForeignKey(h => h.PurchaseRequestId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PurchaseRequestStatusHistory>().HasIndex(h => new { h.PurchaseRequestId, h.ChangedAt });
+        modelBuilder.Entity<PurchaseRequestStatusHistory>().Property(h => h.FromStatus).HasConversion<string>().HasMaxLength(30);
+        modelBuilder.Entity<PurchaseRequestStatusHistory>().Property(h => h.ToStatus).HasConversion<string>().HasMaxLength(30);
 
         modelBuilder.Entity<Policy>()
             .HasOne(p => p.Department)
@@ -182,7 +191,14 @@ public class AppDbContext : DbContext
             .HasForeignKey(s => s.DecidedByEmployeeId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<WorkflowExecution>()
             .HasOne(w => w.ExpenseClaim).WithMany()
-            .HasForeignKey(w => w.ExpenseClaimId).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(w => w.ExpenseClaimId).OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+        modelBuilder.Entity<WorkflowExecution>()
+            .HasOne(w => w.PurchaseRequest).WithMany()
+            .HasForeignKey(w => w.PurchaseRequestId).OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+        modelBuilder.Entity<WorkflowExecution>().Property(w => w.SubjectType).HasMaxLength(40);
+        modelBuilder.Entity<WorkflowExecution>().HasIndex(w => w.PurchaseRequestId);
         modelBuilder.Entity<AuditLog>()
             .HasOne(a => a.Employee).WithMany()
             .HasForeignKey(a => a.EmployeeId).OnDelete(DeleteBehavior.SetNull);
@@ -193,7 +209,8 @@ public class AppDbContext : DbContext
             .IsUnique();
         modelBuilder.Entity<BudgetTransaction>()
             .HasIndex(t => new { t.BudgetId, t.IdempotencyKey })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IdempotencyKey\" IS NOT NULL");
         modelBuilder.Entity<BudgetTransaction>().HasIndex(t => new { t.BudgetId, t.CreatedAt });
         modelBuilder.Entity<BudgetAlert>()
             .HasIndex(a => new { a.BudgetId, a.ThresholdPercent, a.Status });
@@ -210,6 +227,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ExpenseClaim>().Property(c => c.Currency).HasMaxLength(3);
         modelBuilder.Entity<PurchaseRequest>().Property(p => p.Status).HasConversion<string>().HasMaxLength(30);
         modelBuilder.Entity<PurchaseRequest>().Property(p => p.Currency).HasMaxLength(3);
+        modelBuilder.Entity<PurchaseRequest>().Property(p => p.Category).HasMaxLength(100);
+        modelBuilder.Entity<PurchaseRequest>().Property(p => p.CurrentRequiredRole).HasMaxLength(50);
+        modelBuilder.Entity<PurchaseRequest>().Property(p => p.ReviewJson).HasColumnType("jsonb");
+        modelBuilder.Entity<PurchaseRequest>().Property(p => p.ApprovalJson).HasColumnType("jsonb");
+        modelBuilder.Entity<PurchaseRequest>().HasIndex(p => new { p.Status, p.CurrentRequiredRole });
         modelBuilder.Entity<Receipt>().Property(r => r.ProcessingStatus).HasConversion<string>().HasMaxLength(30);
         modelBuilder.Entity<Receipt>().HasIndex(r => new { r.ExpenseClaimId, r.Sha256 }).IsUnique();
         modelBuilder.Entity<Designation>().HasIndex(d => d.Name).IsUnique();
@@ -275,6 +297,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<BudgetTransaction>().Property(t => t.SpentBalance).HasPrecision(18, 2);
         modelBuilder.Entity<BudgetAlert>().Property(a => a.ThresholdPercent).HasPrecision(5, 2);
         modelBuilder.Entity<BudgetAlert>().Property(a => a.UtilizationPercent).HasPrecision(7, 2);
+
+        modelBuilder.Entity<Budget>().ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_Budgets_Dates", "\"PeriodEnd\" >= \"PeriodStart\"");
+            t.HasCheckConstraint("CK_Budgets_Balances", "\"AllocatedAmount\" >= 0 AND \"ReservedAmount\" >= 0 AND \"SpentAmount\" >= 0 AND \"ReservedAmount\" + \"SpentAmount\" <= \"AllocatedAmount\"");
+        });
+        modelBuilder.Entity<BudgetTransaction>().ToTable(t =>
+            t.HasCheckConstraint("CK_BudgetTransactions_Amount", "\"Amount\" > 0"));
 
         modelBuilder.Entity<Role>().HasData(
             new Role { RoleId = 1, RoleName = RoleNames.Employee, PermissionsJson = "[\"reimbursement:self\"]" },

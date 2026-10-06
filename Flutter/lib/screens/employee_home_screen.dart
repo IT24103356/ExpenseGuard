@@ -16,7 +16,10 @@ class _EmployeeHomeScreenState extends ConsumerState<EmployeeHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(['My claims', 'Purchase requests', 'Profile'][index])),
+      appBar: AppBar(
+        title: Text(['My claims', 'Purchase requests', 'Profile'][index]),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/home')),
+      ),
       body: IndexedStack(index: index, children: const [_ClaimsTab(), _RequestsTab(), _ProfileTab()]),
       floatingActionButton: index < 2 ? FloatingActionButton.extended(
         onPressed: () async {

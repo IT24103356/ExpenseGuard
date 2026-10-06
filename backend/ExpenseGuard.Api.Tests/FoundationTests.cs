@@ -4,6 +4,7 @@ using ExpenseGuard.Api.Auth;
 using ExpenseGuard.Api.Data;
 using ExpenseGuard.Api.Models;
 using ExpenseGuard.Api.Reimbursements;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -64,8 +65,12 @@ public sealed class FoundationTests
         await db.SaveChangesAsync();
         Assert.DoesNotContain("mutated later", process.TemplateSnapshotJson);
 
-        var result = await service.DecideAsync(data.reimbursement.ReimbursementId, data.head.EmployeeId,
+        var afterHead = await service.DecideAsync(data.reimbursement.ReimbursementId, data.head.EmployeeId,
             RoleNames.DepartmentHead, new ApprovalDecision("APPROVED", "stage two"), default);
+        Assert.Equal(ReimbursementStatuses.PendingApproval, afterHead.Status);
+        Assert.Equal(RoleNames.Finance, afterHead.CurrentRequiredRole);
+        var result = await service.DecideAsync(data.reimbursement.ReimbursementId, data.head.EmployeeId,
+            RoleNames.Admin, new ApprovalDecision("APPROVED", "finance"), default);
         Assert.Equal(ReimbursementStatuses.Approved, result.Status);
     }
 
@@ -84,6 +89,26 @@ public sealed class FoundationTests
         Assert.Equal(first.PaymentId, second.PaymentId);
         Assert.Equal(1, payment.Calls);
         Assert.Single(db.PaymentTransactions);
+    }
+
+    [Fact]
+    public async Task Manager_can_still_view_a_reimbursement_after_approving_their_stage()
+    {
+        await using var db = Database();
+        var data = await Seed(db);
+        var service = Service(db);
+        await service.StartApprovalAsync(data.reimbursement.ReimbursementId,
+            data.template.ApprovalWorkflowTemplateId, default);
+        await service.DecideAsync(data.reimbursement.ReimbursementId, data.manager.EmployeeId,
+            RoleNames.Manager, new ApprovalDecision("APPROVED", "ok"), default);
+
+        var handler = new OwnsReimbursementHandler(db);
+        var context = new AuthorizationHandlerContext(
+            [new OwnsReimbursementRequirement()],
+            Principal(data.manager.EmployeeId, RoleNames.Manager),
+            data.reimbursement.ReimbursementId);
+        await handler.HandleAsync(context);
+        Assert.True(context.HasSucceeded);
     }
 
     private static ClaimsPrincipal Principal(int id, string role) => new(new ClaimsIdentity(new[]
@@ -135,6 +160,8 @@ public sealed class FoundationTests
         public Task<BudgetCheckResult> CheckAsync(int departmentId, decimal amount, CancellationToken ct) =>
             Task.FromResult(new BudgetCheckResult(true));
         public Task RecordPaymentAsync(int departmentId, decimal amount, int reimbursementId, CancellationToken ct) =>
+            Task.CompletedTask;
+        public Task ReleaseReservationAsync(int departmentId, decimal amount, int reimbursementId, CancellationToken ct) =>
             Task.CompletedTask;
     }
 

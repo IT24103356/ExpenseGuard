@@ -15,8 +15,54 @@ class EmployeeProfile {
   );
 }
 
+class ReviewFlag {
+  const ReviewFlag({required this.code, required this.severity, required this.message});
+  final String code;
+  final String severity;
+  final String message;
+  factory ReviewFlag.fromJson(Map<String, dynamic> json) => ReviewFlag(
+    code: json['code']?.toString() ?? 'FLAG',
+    severity: json['severity']?.toString() ?? 'warning',
+    message: json['message']?.toString() ?? 'Needs review.',
+  );
+}
+
+class ReviewSection {
+  const ReviewSection({required this.outcome, required this.summary, this.flags = const []});
+  final String outcome;
+  final String summary;
+  final List<ReviewFlag> flags;
+  factory ReviewSection.fromJson(Map<String, dynamic>? json) => ReviewSection(
+    outcome: json?['outcome']?.toString() ?? 'unknown',
+    summary: json?['summary']?.toString() ?? 'No finding.',
+    flags: (json?['flags'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ReviewFlag.fromJson)
+        .toList(),
+  );
+}
+
+class RequestReview {
+  const RequestReview({required this.hasFlags, required this.summary, required this.policy, required this.fraud, required this.budget});
+  final bool hasFlags;
+  final String summary;
+  final ReviewSection policy;
+  final ReviewSection fraud;
+  final ReviewSection budget;
+  factory RequestReview.fromJson(Map<String, dynamic> json) => RequestReview(
+    hasFlags: json['hasFlags'] as bool? ?? false,
+    summary: json['summary']?.toString() ?? '',
+    policy: ReviewSection.fromJson(json['policy'] as Map<String, dynamic>?),
+    fraud: ReviewSection.fromJson(json['fraud'] as Map<String, dynamic>?),
+    budget: ReviewSection.fromJson(json['budget'] as Map<String, dynamic>?),
+  );
+}
+
 class PurchaseRequest {
-  const PurchaseRequest({required this.id, required this.description, required this.amount, required this.currency, required this.status, required this.version, this.vendor});
+  const PurchaseRequest({
+    required this.id, required this.description, required this.amount, required this.currency,
+    required this.status, required this.version, this.vendor, this.category, this.review,
+  });
   final int id;
   final String description;
   final double amount;
@@ -24,11 +70,17 @@ class PurchaseRequest {
   final String status;
   final int version;
   final String? vendor;
+  final String? category;
+  final RequestReview? review;
   factory PurchaseRequest.fromJson(Map<String, dynamic> json) => PurchaseRequest(
     id: json['purchaseRequestId'] as int, description: json['description'] as String,
     amount: (json['estimatedAmount'] as num).toDouble(), currency: json['currency'] as String,
     status: enumName(json['status'], const ['Draft', 'Submitted', 'Approved', 'Rejected', 'Cancelled']),
     version: json['version'] as int, vendor: json['vendor'] as String?,
+    category: json['category'] as String?,
+    review: json['review'] is Map<String, dynamic>
+        ? RequestReview.fromJson(json['review'] as Map<String, dynamic>)
+        : null,
   );
 }
 

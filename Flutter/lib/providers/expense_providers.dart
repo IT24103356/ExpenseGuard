@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_provider.dart' as app_auth;
+import '../config/api_config.dart';
 import '../models/expense_models.dart';
 import '../repositories/expense_repository.dart';
 
-const apiBaseUrl = String.fromEnvironment(
-  'EXPENSE_GUARD_API_URL',
-  defaultValue: 'http://10.0.2.2:5000/api',
-);
+final apiBaseUrl = expenseGuardApiBaseUrl();
 
 class BridgeAuthSession implements AuthSession {
   const BridgeAuthSession(this.ref);

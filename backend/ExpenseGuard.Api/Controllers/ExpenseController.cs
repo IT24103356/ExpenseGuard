@@ -1,6 +1,10 @@
+using System.Security.Claims;
+using ExpenseGuard.Api.Auth;
 using ExpenseGuard.Api.Contracts;
 using ExpenseGuard.Api.Models;
+using ExpenseGuard.Api.Reimbursements;
 using ExpenseGuard.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExpenseGuard.Api.Controllers;
@@ -21,7 +25,19 @@ public sealed class EmployeesController(IEmployeeService employees, ICurrentEmpl
 public sealed class PurchaseRequestsController(IPurchaseRequestService requests, ICurrentEmployee actor) : ControllerBase
 {
     [HttpGet] public Task<IReadOnlyList<PurchaseRequestDto>> List(CancellationToken ct) => requests.ListAsync(actor.EmployeeId, ct);
-    [HttpGet("{id:int}")] public Task<PurchaseRequestDto> Get(int id, CancellationToken ct) => requests.GetAsync(id, actor.EmployeeId, ct);
+
+    [HttpGet("approval-queue")]
+    [Authorize(Policy = "CanApprove")]
+    public Task<IReadOnlyList<PurchaseRequestDto>> ApprovalQueue(CancellationToken ct) =>
+        requests.ApprovalQueueAsync(User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
+
+    [HttpGet("{id:int}")]
+    public Task<PurchaseRequestDto> Get(int id, CancellationToken ct)
+        => requests.GetForApprovalAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
+
+    [HttpGet("{id:int}/history")]
+    public Task<IReadOnlyList<PurchaseRequestHistoryDto>> History(int id, CancellationToken ct)
+        => requests.HistoryAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
 
     [HttpPost]
     public async Task<ActionResult<PurchaseRequestDto>> Create(PurchaseRequestWriteDto input, CancellationToken ct)
@@ -41,12 +57,31 @@ public sealed class PurchaseRequestsController(IPurchaseRequestService requests,
         return NoContent();
     }
 
+    [HttpPost("{id:int}/approve")]
+    [Authorize(Policy = "CanApprove")]
+    public Task<PurchaseRequestDto> Approve(int id, [FromBody] string? comment, CancellationToken ct) =>
+        Decide(id, ApprovalStatuses.Approved, comment, ct);
+
+    [HttpPost("{id:int}/reject")]
+    [Authorize(Policy = "CanApprove")]
+    public Task<PurchaseRequestDto> Reject(int id, [FromBody] string? comment, CancellationToken ct) =>
+        Decide(id, ApprovalStatuses.Rejected, comment, ct);
+
+    [HttpPost("{id:int}/revise")]
+    [Authorize(Policy = "CanApprove")]
+    public Task<PurchaseRequestDto> Revise(int id, [FromBody] string? comment, CancellationToken ct) =>
+        Decide(id, ApprovalStatuses.RevisionRequired, comment, ct);
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         await requests.DeleteAsync(id, actor.EmployeeId, ct);
         return NoContent();
     }
+
+    private Task<PurchaseRequestDto> Decide(int id, string decision, string? comment, CancellationToken ct) =>
+        requests.DecideAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty,
+            new ApprovalDecision(decision, comment), ct);
 }
 
 [ApiController]
@@ -84,7 +119,7 @@ public sealed class ClaimsController(IClaimService claims, IReceiptService recei
 
     [HttpGet("{id:int}/history")]
     public Task<IReadOnlyList<ClaimHistoryDto>> History(int id, CancellationToken ct)
-        => claims.HistoryAsync(id, actor.EmployeeId, ct);
+        => claims.HistoryAsync(id, actor.EmployeeId, User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, ct);
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -106,4 +141,14 @@ public sealed class ClaimsController(IClaimService claims, IReceiptService recei
     [HttpPatch("{id:int}/receipts/{receiptId:int}")]
     public Task<ReceiptDto> CorrectReceipt(int id, int receiptId, ReceiptCorrectionDto input, CancellationToken ct)
         => receipts.CorrectAsync(id, receiptId, input, actor.EmployeeId, ct);
+}
+
+[ApiController]
+[Route("api/request-history")]
+[Authorize(Policy = "FinanceOnly")]
+public sealed class RequestHistoryController(IRequestHistoryService history) : ControllerBase
+{
+    [HttpGet]
+    public Task<IReadOnlyList<RequestHistoryDto>> List([FromQuery] RequestHistoryQuery query, CancellationToken ct)
+        => history.ListAsync(query, ct);
 }

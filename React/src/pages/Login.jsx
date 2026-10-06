@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { FiMoon, FiSun } from 'react-icons/fi';
 import { useAuth } from '../auth/AuthContext';
+import { canAccess, homePath } from '../auth/access';
+import { useTheme } from '../auth/ThemeContext';
 import { apiErrorMessage } from '../components/Shared';
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, session } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const fallback = homePath(session?.role);
 
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to={fallback} replace />;
 
   const submit = async event => {
     event.preventDefault();
@@ -22,8 +27,9 @@ export default function Login() {
     setBusy(true);
     setError('');
     try {
-      await login(form.username, form.password);
-      navigate(location.state?.from ?? '/', { replace: true });
+      const next = await login(form.username, form.password);
+      const requested = location.state?.from;
+      navigate(requested && canAccess(next.role, requested) ? requested : homePath(next.role), { replace: true });
     } catch (err) {
       setError(apiErrorMessage(err, 'Sign in failed. Try again.'));
     } finally {
@@ -34,8 +40,16 @@ export default function Login() {
   return (
     <main className="login-page">
       <form className="card login-card" onSubmit={submit} noValidate>
-        <h1>ExpenseGuard</h1>
-        <p>Sign in to continue.</p>
+        <div className="login-card-header">
+          <div>
+            <h1>ExpenseGuard</h1>
+            <p>Sign in to continue.</p>
+          </div>
+          <button className="btn btn-ghost btn-sm" type="button" onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+            {isDark ? <FiSun /> : <FiMoon />}
+          </button>
+        </div>
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
         <label className="form-label" htmlFor="username">Username</label>
         <input id="username" autoComplete="username" value={form.username}

@@ -12,15 +12,10 @@ class MyClaimsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Claims', style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/home')),
         actions: [
-          IconButton(tooltip: 'Expense intake', icon: const Icon(Icons.receipt_long), onPressed: () => context.go('/intake')),
-          IconButton(tooltip: 'Expense intake', icon: const Icon(Icons.receipt_long), onPressed: () => context.go('/intake')),
-          IconButton(tooltip: 'Policy guidance', icon: const Icon(Icons.policy), onPressed: () => context.go('/policy-guidance')),
-          IconButton(icon: const Icon(Icons.history), onPressed: () => context.go('/history')),
           IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(reimbursementsProvider)),
-          IconButton(tooltip: 'Sign out', icon: const Icon(Icons.logout),
-              onPressed: () => ref.read(authProvider.notifier).logout()),
         ],
       ),
       body: claims.when(

@@ -1,6 +1,8 @@
 using System.Text.Json;
+using ExpenseGuard.Api.Contracts;
 using ExpenseGuard.Api.Data;
 using ExpenseGuard.Api.Models;
+using ExpenseGuard.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseGuard.Api.Reimbursements;
@@ -10,6 +12,7 @@ public interface IBudgetGateway
 {
     Task<BudgetCheckResult> CheckAsync(int departmentId, decimal amount, CancellationToken cancellationToken);
     Task RecordPaymentAsync(int departmentId, decimal amount, int reimbursementId, CancellationToken cancellationToken);
+    Task ReleaseReservationAsync(int departmentId, decimal amount, int reimbursementId, CancellationToken cancellationToken);
 }
 
 public sealed class UnconfiguredBudgetGateway : IBudgetGateway
@@ -18,6 +21,8 @@ public sealed class UnconfiguredBudgetGateway : IBudgetGateway
         Task.FromResult(new BudgetCheckResult(false, "Budget service contract is not configured."));
     public Task RecordPaymentAsync(int departmentId, decimal amount, int reimbursementId, CancellationToken cancellationToken) =>
         throw new InvalidOperationException("Budget service contract is not configured.");
+    public Task ReleaseReservationAsync(int departmentId, decimal amount, int reimbursementId, CancellationToken cancellationToken) =>
+        Task.CompletedTask;
 }
 
 public record PaymentRequest(string IdempotencyKey, int ReimbursementId, int EmployeeId,
@@ -36,7 +41,8 @@ public sealed class DeterministicPaymentProvider : IPaymentProvider
 }
 
 public record ReimbursementDto(int Id, int ExpenseClaimId, int EmployeeId, int DepartmentId,
-    decimal Amount, string Currency, string Status, Guid? PaymentId, string? PaymentReference);
+    decimal Amount, string Currency, string Status, Guid? PaymentId, string? PaymentReference,
+    string? CurrentRequiredRole = null, IReadOnlyList<PurchaseRequestApprovalStepDto>? ApprovalSteps = null);
 public record CreateReimbursementRequest(int ExpenseClaimId, string Currency = "LKR");
 public record ApprovalDecision(string Decision, string? Comment);
 
@@ -55,7 +61,7 @@ public interface IReimbursementService
 
 public sealed class ReimbursementService(
     AppDbContext db, IBudgetGateway budgets, IPaymentProvider payments,
-    ILogger<ReimbursementService> logger) : IReimbursementService
+    ILogger<ReimbursementService> logger, IWorkflowLedger? workflows = null) : IReimbursementService
 {
     public async Task<ReimbursementDto> CreateAsync(CreateReimbursementRequest request, int employeeId, CancellationToken ct)
     {
@@ -79,13 +85,14 @@ public sealed class ReimbursementService(
 
     public async Task<ReimbursementDto?> GetAsync(int id, CancellationToken ct) =>
         Map(await db.Reimbursements.Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee)
+            .Include(r => r.ApprovalProcesses).ThenInclude(p => p.Steps)
             .SingleOrDefaultAsync(r => r.ReimbursementId == id, ct));
 
     public async Task<IReadOnlyList<ReimbursementDto>> ListForEmployeeAsync(int employeeId, CancellationToken ct) =>
         await db.Reimbursements.AsNoTracking().Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee)
             .Where(r => r.ExpenseClaim.EmployeeId == employeeId).OrderByDescending(r => r.RequestedAt)
             .Select(r => new ReimbursementDto(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
-                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference))
+                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference, null, null))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ReimbursementDto>> FinanceQueueAsync(string? status, CancellationToken ct)
@@ -94,7 +101,7 @@ public sealed class ReimbursementService(
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(r => r.Status == status.ToUpperInvariant());
         return await query.OrderBy(r => r.RequestedAt)
             .Select(r => new ReimbursementDto(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
-                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference))
+                r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference, null, null))
             .ToListAsync(ct);
     }
 
@@ -112,7 +119,9 @@ public sealed class ReimbursementService(
                 p.Reimbursement.Currency,
                 p.Reimbursement.Status,
                 p.Reimbursement.PaymentId,
-                p.Reimbursement.PaymentReference))
+                p.Reimbursement.PaymentReference,
+                p.Steps.Where(s => s.Sequence == p.CurrentSequence).Select(s => s.RequiredRole).FirstOrDefault(),
+                null))
             .ToListAsync(ct);
 
     public async Task<ReimbursementDto> StartApprovalAsync(int id, int templateId, CancellationToken ct)
@@ -123,9 +132,7 @@ public sealed class ReimbursementService(
         var template = await db.ApprovalWorkflowTemplates.Include(t => t.Stages)
             .SingleOrDefaultAsync(t => t.ApprovalWorkflowTemplateId == templateId && t.IsActive, ct)
             ?? throw new KeyNotFoundException("Approval workflow template not found.");
-        var stages = template.Stages.Where(s => (!s.MinimumAmount.HasValue || reimbursement.Total >= s.MinimumAmount)
-            && (!s.MaximumAmount.HasValue || reimbursement.Total <= s.MaximumAmount))
-            .OrderBy(s => s.Sequence).ToList();
+        var stages = ApprovalStageSelector.ForAmount(template.Stages, reimbursement.Total);
         if (stages.Count == 0) throw new InvalidOperationException("Workflow has no applicable approval stages.");
         var snapshot = JsonSerializer.Serialize(new { template.ApprovalWorkflowTemplateId, template.Name, Stages = stages.Select(s => new { s.Sequence, s.RequiredRole }) });
         var process = new ApprovalProcess
@@ -179,6 +186,7 @@ public sealed class ReimbursementService(
             else process.CurrentSequence = next.Sequence;
         }
         await db.SaveChangesAsync(ct);
+        await AfterDecisionAsync(reimbursement, employeeId, role, normalized, decision.Comment, ct);
         return Map(reimbursement)!;
     }
 
@@ -248,16 +256,80 @@ public sealed class ReimbursementService(
             reimbursement.RetryCount++;
         }
         await db.SaveChangesAsync(ct);
+        if (reimbursement.Status == ReimbursementStatuses.Paid && workflows is not null)
+            await workflows.SetStatusAsync(reimbursement.ExpenseClaimId, "COMPLETED", ct);
         logger.LogInformation("Payment {PaymentStatus} for reimbursement {ReimbursementId}", reimbursement.Status, id);
         return Map(reimbursement)!;
     }
 
+    private async Task AfterDecisionAsync(Reimbursement reimbursement, int employeeId, string role,
+        string decision, string? comment, CancellationToken ct)
+    {
+        if (workflows is not null)
+        {
+            await workflows.AuditAsync(employeeId, $"approval.{decision.ToLowerInvariant()}", "Reimbursement",
+                reimbursement.ReimbursementId.ToString(), new { role, decision, comment },
+                $"reimbursement:{reimbursement.ReimbursementId}", ct);
+        }
+
+        var claim = reimbursement.ExpenseClaim;
+        if (decision == ApprovalStatuses.Rejected)
+        {
+            await MoveClaimAsync(claim, employeeId, ClaimStatus.Rejected, comment ?? "Rejected during approval.", ct);
+            await budgets.ReleaseReservationAsync(claim.Employee.DepartmentId, reimbursement.Total,
+                reimbursement.ReimbursementId, ct);
+            if (workflows is not null) await workflows.SetStatusAsync(claim.ExpenseClaimId, "REJECTED", ct);
+        }
+        else if (decision == ApprovalStatuses.RevisionRequired)
+        {
+            await MoveClaimAsync(claim, employeeId, ClaimStatus.NeedsCorrection, comment ?? "Revision required.", ct);
+            await budgets.ReleaseReservationAsync(claim.Employee.DepartmentId, reimbursement.Total,
+                reimbursement.ReimbursementId, ct);
+            if (workflows is not null) await workflows.SetStatusAsync(claim.ExpenseClaimId, "REVISION_REQUIRED", ct);
+        }
+        else if (reimbursement.Status == ReimbursementStatuses.Approved)
+        {
+            await MoveClaimAsync(claim, employeeId, ClaimStatus.Approved, "All approval stages completed.", ct);
+            if (workflows is not null) await workflows.SetStatusAsync(claim.ExpenseClaimId, "APPROVED", ct);
+        }
+    }
+
+    private async Task MoveClaimAsync(ExpenseClaim claim, int actorId, ClaimStatus target, string reason, CancellationToken ct)
+    {
+        if (claim.Status == target) return;
+        var from = claim.Status;
+        claim.Status = target;
+        claim.UpdatedAt = DateTime.UtcNow;
+        claim.Version++;
+        db.ClaimStatusHistories.Add(new ClaimStatusHistory
+        {
+            ExpenseClaimId = claim.ExpenseClaimId,
+            FromStatus = from,
+            ToStatus = target,
+            ChangedByEmployeeId = actorId,
+            Reason = reason
+        });
+        await db.SaveChangesAsync(ct);
+    }
+
     private async Task<Reimbursement> Required(int id, CancellationToken ct) =>
         await db.Reimbursements.Include(r => r.ExpenseClaim).ThenInclude(c => c.Employee)
+            .Include(r => r.ApprovalProcesses).ThenInclude(p => p.Steps)
             .SingleOrDefaultAsync(r => r.ReimbursementId == id, ct)
         ?? throw new KeyNotFoundException("Reimbursement not found.");
 
-    private static ReimbursementDto? Map(Reimbursement? r) => r is null ? null :
-        new(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
-            r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference);
+    private static ReimbursementDto? Map(Reimbursement? r)
+    {
+        if (r is null) return null;
+        var process = r.ApprovalProcesses?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
+        var current = process is { Status: ApprovalStatuses.Pending }
+            ? process.Steps.FirstOrDefault(s => s.Sequence == process.CurrentSequence)?.RequiredRole
+            : null;
+        var steps = process?.Steps.OrderBy(s => s.Sequence)
+            .Select(s => new PurchaseRequestApprovalStepDto(s.Sequence, s.RequiredRole, s.Status, s.Comment, s.DecidedByEmployeeId, s.DecidedAt))
+            .ToList();
+        return new(r.ReimbursementId, r.ExpenseClaimId, r.ExpenseClaim.EmployeeId,
+            r.ExpenseClaim.Employee.DepartmentId, r.Total, r.Currency, r.Status, r.PaymentId, r.PaymentReference,
+            current, steps);
+    }
 }

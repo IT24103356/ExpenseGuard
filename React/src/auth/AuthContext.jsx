@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { loginRequest, setUnauthorizedHandler } from '../services/api';
 
 const STORAGE_KEY = 'expenseguard.session';
@@ -20,11 +21,13 @@ function readSession() {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined);
+  const queryClient = useQueryClient();
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    queryClient.clear();
     setSession(null);
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     setSession(readSession());
@@ -33,11 +36,12 @@ export function AuthProvider({ children }) {
   }, [logout]);
 
   const login = useCallback(async (username, password) => {
+    queryClient.clear();
     const { data } = await loginRequest({ username: username.trim(), password });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     setSession(data);
     return data;
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo(() => ({
     session,

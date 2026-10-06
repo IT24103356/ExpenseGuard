@@ -6,7 +6,7 @@ import { AccessGate, MutationError, QueryState } from '../components/RequestStat
 import { Pagination, StatusBadge } from '../components/Shared';
 
 const blank = {
-  policyCode: '', category: '', minAmount: '', maxAmount: '', currency: 'USD',
+  policyCode: '', category: '', minAmount: '', maxAmount: '', currency: 'LKR',
   receiptRequired: false, priority: 0, effectiveFrom: '', effectiveTo: '',
   departmentId: '', designations: '', activate: true,
 };

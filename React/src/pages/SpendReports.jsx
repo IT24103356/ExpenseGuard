@@ -5,11 +5,15 @@ import {
 } from 'recharts';
 import { getSpendVsBudget, getMonthlySpending, getCategorySpending, getReimbursementSummary, getPaymentSummary } from '../services/api';
 import { LoadingSpinner, AmountDisplay } from '../components/Shared';
+import { useTheme } from '../auth/ThemeContext';
+import { chartAxis, chartTooltipStyle } from '../theme/chartStyles';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
-const TOOLTIP_STYLE = { backgroundColor: '#1a2236', border: '1px solid #1e293b', borderRadius: 8, padding: '10px 14px', color: '#f1f5f9', fontSize: 13 };
 
 export default function SpendReports() {
+  const { theme } = useTheme();
+  const tooltipStyle = chartTooltipStyle();
+  const { tick: axisStroke, grid: gridStroke } = chartAxis(theme);
   const [svb, setSvb] = useState(null);
   const [monthly, setMonthly] = useState([]);
   const [category, setCategory] = useState([]);
@@ -94,10 +98,10 @@ export default function SpendReports() {
           <div className="chart-title">Department Spend vs Budget</div>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={s.departmentSummaries || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="departmentName" tick={{ fill: '#64748b', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={v => `${(v/1e6).toFixed(1)}M`} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => `LKR ${v.toLocaleString()}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="departmentName" tick={{ fill: axisStroke, fontSize: 11 }} />
+              <YAxis tick={{ fill: axisStroke, fontSize: 11 }} tickFormatter={v => `${(v/1e6).toFixed(1)}M`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `LKR ${v.toLocaleString()}`} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
               <Bar dataKey="allocatedBudget" name="Budget" fill="#6366f1" radius={[3, 3, 0, 0]} />
               <Bar dataKey="totalSpent" name="Spent" fill="#10b981" radius={[3, 3, 0, 0]} />
@@ -110,10 +114,10 @@ export default function SpendReports() {
           <div className="chart-title">Monthly Spending Trend</div>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={v => `${(v/1e3).toFixed(0)}K`} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => `LKR ${v.toLocaleString()}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="month" tick={{ fill: axisStroke, fontSize: 11 }} />
+              <YAxis tick={{ fill: axisStroke, fontSize: 11 }} tickFormatter={v => `${(v/1e3).toFixed(0)}K`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `LKR ${v.toLocaleString()}`} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
               <Line type="monotone" dataKey="totalSpend" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} name="Spend" />
               <Line type="monotone" dataKey="reimbursementCount" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Claims" yAxisId="right" />
@@ -129,7 +133,7 @@ export default function SpendReports() {
               <Pie data={category} dataKey="totalSpend" nameKey="category" cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={2}>
                 {category.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => `LKR ${v.toLocaleString()}`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `LKR ${v.toLocaleString()}`} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
             </PieChart>
           </ResponsiveContainer>
@@ -152,7 +156,7 @@ export default function SpendReports() {
                 <Cell fill="#ef4444" />
                 <Cell fill="#f59e0b" />
               </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Tooltip contentStyle={tooltipStyle} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
             </PieChart>
           </ResponsiveContainer>

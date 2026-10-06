@@ -10,7 +10,7 @@ public class ExpenseClaim
     public ClaimStatus Status { get; set; } = ClaimStatus.Draft;
     public ClaimFlow Flow { get; set; } = ClaimFlow.OutOfPocket;
     public string Description { get; set; } = string.Empty;
-    public string Currency { get; set; } = "USD";
+    public string Currency { get; set; } = "LKR";
     public string? Vendor { get; set; }
     public string PurchaseNo { get; set; } = string.Empty;
     public DateTime? PurchaseDate { get; set; }

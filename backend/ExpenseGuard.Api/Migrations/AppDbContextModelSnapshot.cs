@@ -17,7 +17,7 @@ namespace ExpenseGuard.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.31")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -215,24 +215,202 @@ namespace ExpenseGuard.Api.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .IsFixedLength();
+
                     b.Property<int>("DepartmentId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Period")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("ReservedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<decimal>("SpentAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
                     b.HasKey("BudgetId");
 
-                    b.HasIndex("DepartmentId", "Period")
+                    b.HasIndex("DepartmentId", "PeriodStart", "PeriodEnd", "Currency")
                         .IsUnique();
 
-                    b.ToTable("Budgets");
+                    b.ToTable("Budgets", t =>
+                        {
+                            t.HasCheckConstraint("CK_Budgets_Balances", "\"AllocatedAmount\" >= 0 AND \"ReservedAmount\" >= 0 AND \"SpentAmount\" >= 0 AND \"ReservedAmount\" + \"SpentAmount\" <= \"AllocatedAmount\"");
+
+                            t.HasCheckConstraint("CK_Budgets_Dates", "\"PeriodEnd\" >= \"PeriodStart\"");
+                        });
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.BudgetAlert", b =>
+                {
+                    b.Property<long>("BudgetAlertId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("BudgetAlertId"));
+
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("BudgetId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("ThresholdPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal>("UtilizationPercent")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("numeric(7,2)");
+
+                    b.HasKey("BudgetAlertId");
+
+                    b.HasIndex("BudgetId", "ThresholdPercent", "Status");
+
+                    b.ToTable("BudgetAlerts");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.BudgetTransaction", b =>
+                {
+                    b.Property<long>("BudgetTransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("BudgetTransactionId"));
+
+                    b.Property<decimal>("AllocatedBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("BudgetId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("ReservedBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("SpentBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("BudgetTransactionId");
+
+                    b.HasIndex("BudgetId", "CreatedAt");
+
+                    b.HasIndex("BudgetId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("\"IdempotencyKey\" IS NOT NULL");
+
+                    b.ToTable("BudgetTransactions", t =>
+                        {
+                            t.HasCheckConstraint("CK_BudgetTransactions_Amount", "\"Amount\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ClaimStatusHistory", b =>
+                {
+                    b.Property<int>("ClaimStatusHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ClaimStatusHistoryId"));
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ChangedByEmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ExpenseClaimId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FromStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ClaimStatusHistoryId");
+
+                    b.HasIndex("ExpenseClaimId");
+
+                    b.ToTable("ClaimStatusHistories");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Department", b =>
@@ -243,13 +421,58 @@ namespace ExpenseGuard.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DepartmentId"));
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("DepartmentName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
 
                     b.HasKey("DepartmentId");
 
+                    b.HasIndex("Code")
+                        .IsUnique();
+
                     b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Designation", b =>
+                {
+                    b.Property<int>("DesignationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DesignationId"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("DesignationId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Designations");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Employee", b =>
@@ -266,11 +489,32 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<int>("DepartmentId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("DesignationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLocked")
                         .HasColumnType("boolean");
 
                     b.Property<int?>("ManagerId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("NormalizedUsername")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -288,7 +532,15 @@ namespace ExpenseGuard.Api.Migrations
 
                     b.HasIndex("DepartmentId");
 
+                    b.HasIndex("DesignationId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.HasIndex("ManagerId");
+
+                    b.HasIndex("NormalizedUsername")
+                        .IsUnique();
 
                     b.HasIndex("RoleId");
 
@@ -318,11 +570,25 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("EmployeeId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Flow")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime?>("PurchaseDate")
                         .HasColumnType("timestamp with time zone");
@@ -331,6 +597,9 @@ namespace ExpenseGuard.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("PurchaseRequestId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ReceiptDoc")
                         .HasColumnType("text");
@@ -349,13 +618,72 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Vendor")
+                        .HasColumnType("text");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.HasKey("ExpenseClaimId");
 
                     b.HasIndex("EmployeeId");
 
+                    b.HasIndex("PurchaseRequestId");
+
                     b.HasIndex("Status");
 
                     b.ToTable("ExpenseClaims");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.FraudEvaluation", b =>
+                {
+                    b.Property<int>("FraudEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FraudEvaluationId"));
+
+                    b.Property<decimal>("ClaimAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExpenseClaimId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("InputFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("NormalizedInvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("ReceiptAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("RiskLevel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("RiskScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.HasKey("FraudEvaluationId");
+
+                    b.HasIndex("NormalizedInvoiceNumber");
+
+                    b.HasIndex("ExpenseClaimId", "InputFingerprint")
+                        .IsUnique();
+
+                    b.ToTable("FraudEvaluations");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.FraudFlag", b =>
@@ -369,6 +697,10 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<int>("ExpenseClaimId")
                         .HasColumnType("integer");
 
@@ -376,13 +708,49 @@ namespace ExpenseGuard.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("FraudEvaluationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResolvedBy")
+                        .HasColumnType("text");
+
                     b.Property<decimal>("RiskScore")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
+                    b.Property<string>("RuleCode")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.HasKey("FraudFlagId");
 
                     b.HasIndex("ExpenseClaimId");
+
+                    b.HasIndex("FraudEvaluationId");
+
+                    b.HasIndex("Status", "Severity", "CreatedAt");
 
                     b.ToTable("FraudFlags");
                 });
@@ -444,21 +812,343 @@ namespace ExpenseGuard.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
                     b.Property<int?>("DepartmentId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("MaxAmount")
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("MaxAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<decimal?>("MinAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("PolicyCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("ReceiptRequired")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
 
                     b.HasKey("PolicyId");
 
                     b.HasIndex("DepartmentId");
 
+                    b.HasIndex("PolicyCode", "Version")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive", "Category", "Currency", "DepartmentId", "EffectiveFrom", "EffectiveTo");
+
                     b.ToTable("Policies");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyDesignation", b =>
+                {
+                    b.Property<int>("PolicyDesignationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PolicyDesignationId"));
+
+                    b.Property<string>("Designation")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("PolicyId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("PolicyDesignationId");
+
+                    b.HasIndex("PolicyId", "Designation")
+                        .IsUnique();
+
+                    b.ToTable("PolicyDesignations");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyEvaluation", b =>
+                {
+                    b.Property<int>("PolicyEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PolicyEvaluationId"));
+
+                    b.Property<DateTime>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExpenseClaimId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("InputFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int?>("PolicyId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("PolicyEvaluationId");
+
+                    b.HasIndex("PolicyId");
+
+                    b.HasIndex("ExpenseClaimId", "InputFingerprint")
+                        .IsUnique();
+
+                    b.ToTable("PolicyEvaluations");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyViolation", b =>
+                {
+                    b.Property<int>("PolicyViolationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PolicyViolationId"));
+
+                    b.Property<decimal?>("ActualAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("ExpectedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PolicyEvaluationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RuleCode")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("PolicyViolationId");
+
+                    b.HasIndex("PolicyEvaluationId");
+
+                    b.ToTable("PolicyViolations");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PurchaseRequest", b =>
+                {
+                    b.Property<int>("PurchaseRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PurchaseRequestId"));
+
+                    b.Property<string>("ApprovalJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("CurrentRequiredRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("EstimatedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("ReviewJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Vendor")
+                        .HasColumnType("text");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("PurchaseRequestId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("Status", "CurrentRequiredRole");
+
+                    b.ToTable("PurchaseRequests");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PurchaseRequestStatusHistory", b =>
+                {
+                    b.Property<int>("PurchaseRequestStatusHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PurchaseRequestStatusHistoryId"));
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ChangedByEmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FromStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int>("PurchaseRequestId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ToStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("PurchaseRequestStatusHistoryId");
+
+                    b.HasIndex("PurchaseRequestId", "ChangedAt");
+
+                    b.ToTable("PurchaseRequestStatusHistories");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Receipt", b =>
+                {
+                    b.Property<int>("ReceiptId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReceiptId"));
+
+                    b.Property<decimal?>("Confidence")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("numeric(5,4)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CorrectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CorrectedByEmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ExpenseClaimId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("ExtractedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("ExtractedCurrency")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExtractedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExtractedText")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExtractedVendor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProcessingStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("RequiresManualReview")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ReceiptId");
+
+                    b.HasIndex("ExpenseClaimId", "Sha256")
+                        .IsUnique();
+
+                    b.ToTable("Receipts");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Reimbursement", b =>
@@ -701,12 +1391,15 @@ namespace ExpenseGuard.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("ExpenseClaimId")
+                    b.Property<int?>("ExpenseClaimId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Objective")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int?>("PurchaseRequestId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("StateJson")
                         .HasColumnType("text");
@@ -715,12 +1408,19 @@ namespace ExpenseGuard.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("WorkflowExecutionId");
 
                     b.HasIndex("ExpenseClaimId");
+
+                    b.HasIndex("PurchaseRequestId");
 
                     b.ToTable("WorkflowExecutions");
                 });
@@ -843,6 +1543,39 @@ namespace ExpenseGuard.Api.Migrations
                     b.Navigation("Department");
                 });
 
+            modelBuilder.Entity("ExpenseGuard.Api.Models.BudgetAlert", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Budget", "Budget")
+                        .WithMany("Alerts")
+                        .HasForeignKey("BudgetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Budget");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.BudgetTransaction", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Budget", "Budget")
+                        .WithMany("Transactions")
+                        .HasForeignKey("BudgetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Budget");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.ClaimStatusHistory", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("ExpenseClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseClaim");
+                });
+
             modelBuilder.Entity("ExpenseGuard.Api.Models.Employee", b =>
                 {
                     b.HasOne("ExpenseGuard.Api.Models.Department", "Department")
@@ -850,6 +1583,11 @@ namespace ExpenseGuard.Api.Migrations
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("ExpenseGuard.Api.Models.Designation", "Designation")
+                        .WithMany("Employees")
+                        .HasForeignKey("DesignationId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("ExpenseGuard.Api.Models.Employee", "Manager")
                         .WithMany("DirectReports")
@@ -864,6 +1602,8 @@ namespace ExpenseGuard.Api.Migrations
 
                     b.Navigation("Department");
 
+                    b.Navigation("Designation");
+
                     b.Navigation("Manager");
 
                     b.Navigation("Role");
@@ -877,7 +1617,25 @@ namespace ExpenseGuard.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ExpenseGuard.Api.Models.PurchaseRequest", "PurchaseRequest")
+                        .WithMany("Claims")
+                        .HasForeignKey("PurchaseRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Employee");
+
+                    b.Navigation("PurchaseRequest");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.FraudEvaluation", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
+                        .WithMany("FraudEvaluations")
+                        .HasForeignKey("ExpenseClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseClaim");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.FraudFlag", b =>
@@ -885,10 +1643,17 @@ namespace ExpenseGuard.Api.Migrations
                     b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
                         .WithMany("FraudFlags")
                         .HasForeignKey("ExpenseClaimId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ExpenseGuard.Api.Models.FraudEvaluation", "FraudEvaluation")
+                        .WithMany("Flags")
+                        .HasForeignKey("FraudEvaluationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.Navigation("ExpenseClaim");
+
+                    b.Navigation("FraudEvaluation");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.PaymentTransaction", b =>
@@ -910,6 +1675,79 @@ namespace ExpenseGuard.Api.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Department");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyDesignation", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Policy", "Policy")
+                        .WithMany("Designations")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyEvaluation", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
+                        .WithMany("PolicyEvaluations")
+                        .HasForeignKey("ExpenseClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExpenseGuard.Api.Models.Policy", "Policy")
+                        .WithMany("Evaluations")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ExpenseClaim");
+
+                    b.Navigation("Policy");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyViolation", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.PolicyEvaluation", "PolicyEvaluation")
+                        .WithMany("Violations")
+                        .HasForeignKey("PolicyEvaluationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PolicyEvaluation");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PurchaseRequest", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.Employee", "Employee")
+                        .WithMany("PurchaseRequests")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PurchaseRequestStatusHistory", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.PurchaseRequest", "PurchaseRequest")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("PurchaseRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseRequest");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Receipt", b =>
+                {
+                    b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
+                        .WithMany("Receipts")
+                        .HasForeignKey("ExpenseClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseClaim");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Reimbursement", b =>
@@ -950,10 +1788,16 @@ namespace ExpenseGuard.Api.Migrations
                     b.HasOne("ExpenseGuard.Api.Models.ExpenseClaim", "ExpenseClaim")
                         .WithMany()
                         .HasForeignKey("ExpenseClaimId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ExpenseGuard.Api.Models.PurchaseRequest", "PurchaseRequest")
+                        .WithMany()
+                        .HasForeignKey("PurchaseRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ExpenseClaim");
+
+                    b.Navigation("PurchaseRequest");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.WorkflowStep", b =>
@@ -977,6 +1821,13 @@ namespace ExpenseGuard.Api.Migrations
                     b.Navigation("Stages");
                 });
 
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Budget", b =>
+                {
+                    b.Navigation("Alerts");
+
+                    b.Navigation("Transactions");
+                });
+
             modelBuilder.Entity("ExpenseGuard.Api.Models.Department", b =>
                 {
                     b.Navigation("Budgets");
@@ -986,18 +1837,57 @@ namespace ExpenseGuard.Api.Migrations
                     b.Navigation("Policies");
                 });
 
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Designation", b =>
+                {
+                    b.Navigation("Employees");
+                });
+
             modelBuilder.Entity("ExpenseGuard.Api.Models.Employee", b =>
                 {
                     b.Navigation("DirectReports");
 
                     b.Navigation("ExpenseClaims");
+
+                    b.Navigation("PurchaseRequests");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.ExpenseClaim", b =>
                 {
+                    b.Navigation("FraudEvaluations");
+
                     b.Navigation("FraudFlags");
 
+                    b.Navigation("PolicyEvaluations");
+
+                    b.Navigation("Receipts");
+
                     b.Navigation("Reimbursement");
+
+                    b.Navigation("StatusHistory");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.FraudEvaluation", b =>
+                {
+                    b.Navigation("Flags");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.Policy", b =>
+                {
+                    b.Navigation("Designations");
+
+                    b.Navigation("Evaluations");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PolicyEvaluation", b =>
+                {
+                    b.Navigation("Violations");
+                });
+
+            modelBuilder.Entity("ExpenseGuard.Api.Models.PurchaseRequest", b =>
+                {
+                    b.Navigation("Claims");
+
+                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("ExpenseGuard.Api.Models.Reimbursement", b =>

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="EXPENSEGUARD_", extra="ignore")
     fake_mode: bool = True
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-3.8-flash"
     postgres_dsn: str | None = None
     aspnet_base_url: str = "http://localhost:5000"
     aspnet_service_token: str | None = None

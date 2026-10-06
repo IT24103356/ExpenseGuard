@@ -20,7 +20,7 @@ public sealed class FraudService(AppDbContext db, TimeProvider timeProvider) : I
 {
     public async Task<FraudEvaluationDto?> EvaluateAsync(FraudEvaluateRequest request, CancellationToken cancellationToken)
     {
-        var claim = await db.ExpenseClaims.Include(x => x.Employee)
+        var claim = await db.ExpenseClaims.Include(x => x.Employee).Include(x => x.Receipts)
             .FirstOrDefaultAsync(x => x.ExpenseClaimId == request.ExpenseClaimId && x.DeletedAt == null, cancellationToken);
         if (claim is null) return null;
         var invoice = request.InvoiceNumber?.Trim().ToUpperInvariant();
@@ -47,7 +47,8 @@ public sealed class FraudService(AppDbContext db, TimeProvider timeProvider) : I
                 CreatedAt = timeProvider.GetUtcNow().UtcDateTime
             });
 
-        var hasReceipt = !string.IsNullOrWhiteSpace(claim.ReceiptImg) || !string.IsNullOrWhiteSpace(claim.ReceiptDoc);
+        var hasReceipt = !string.IsNullOrWhiteSpace(claim.ReceiptImg) || !string.IsNullOrWhiteSpace(claim.ReceiptDoc)
+            || claim.Receipts.Count > 0;
         if (!hasReceipt) Flag("MISSING_RECEIPT", "medium", 25, "Claim has no receipt.", new { hasReceipt });
         if (request.ReceiptAmount is not null && request.ReceiptAmount != claim.Amount)
             Flag("AMOUNT_MISMATCH", "high", 45, "Receipt and claim amounts differ.", new { claimAmount = claim.Amount, receiptAmount = request.ReceiptAmount });

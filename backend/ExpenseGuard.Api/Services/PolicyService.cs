@@ -63,7 +63,7 @@ public sealed class PolicyService(AppDbContext db, TimeProvider timeProvider) : 
 
     public async Task<PolicyEvaluationDto?> EvaluateAsync(PolicyEvaluateRequest request, CancellationToken cancellationToken)
     {
-        var claim = await db.ExpenseClaims.Include(x => x.Employee)
+        var claim = await db.ExpenseClaims.Include(x => x.Employee).Include(x => x.Receipts)
             .FirstOrDefaultAsync(x => x.ExpenseClaimId == request.ExpenseClaimId && x.DeletedAt == null, cancellationToken);
         if (claim is null) return null;
 
@@ -104,7 +104,7 @@ public sealed class PolicyService(AppDbContext db, TimeProvider timeProvider) : 
             evaluation.Violations.Add(new() { RuleCode = "NO_APPLICABLE_POLICY", Message = "No applicable policy was found.", Severity = "warning" });
         else
         {
-            if (policy.ReceiptRequired && string.IsNullOrWhiteSpace(claim.ReceiptImg) && string.IsNullOrWhiteSpace(claim.ReceiptDoc))
+            if (policy.ReceiptRequired && !HasReceipt(claim))
                 evaluation.Violations.Add(new() { RuleCode = "RECEIPT_REQUIRED", Message = "A receipt is required.", Severity = "error" });
             if (policy.MinAmount is not null && claim.Amount < policy.MinAmount)
                 evaluation.Violations.Add(new() { RuleCode = "BELOW_MINIMUM", Message = "Claim is below the policy minimum.", Severity = "error", ExpectedAmount = policy.MinAmount, ActualAmount = claim.Amount });
@@ -132,6 +132,9 @@ public sealed class PolicyService(AppDbContext db, TimeProvider timeProvider) : 
         Designations = request.Designations.Select(x => new PolicyDesignation { Designation = x.Trim().ToUpperInvariant() })
             .Where(x => x.Designation.Length > 0).DistinctBy(x => x.Designation).ToList()
     };
+
+    private static bool HasReceipt(ExpenseClaim claim) =>
+        !string.IsNullOrWhiteSpace(claim.ReceiptImg) || !string.IsNullOrWhiteSpace(claim.ReceiptDoc) || claim.Receipts.Count > 0;
 
     private static string Fingerprint(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private static PolicyDto Map(Policy x) => new(x.PolicyId, x.PolicyCode, x.Version, x.Category, x.MinAmount, x.MaxAmount,

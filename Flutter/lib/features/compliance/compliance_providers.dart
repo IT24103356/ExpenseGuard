@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import '../../auth/auth_provider.dart';
+import '../../config/api_config.dart';
 
 class ApiConfig {
   final String baseUrl;
@@ -8,7 +10,7 @@ class ApiConfig {
   const ApiConfig({required this.baseUrl, this.token});
 
   factory ApiConfig.environment() {
-    const baseUrl = String.fromEnvironment('API_BASE_URL');
+    final baseUrl = expenseGuardApiBaseUrl();
     const token = String.fromEnvironment('AUTH_TOKEN');
     return ApiConfig(
       baseUrl: baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl,
@@ -74,7 +76,7 @@ class HttpComplianceRepository implements ComplianceRepository {
   @override
   Future<ComplianceFeedback> evaluate(ComplianceInput input) async {
     if (config.baseUrl.isEmpty) {
-      throw const ApiFailure('API_BASE_URL is not configured.');
+      throw const ApiFailure('The API URL is not configured.');
     }
     if (config.token == null) {
       throw const ApiFailure('Sign in before requesting guidance.', statusCode: 401);
@@ -100,7 +102,11 @@ class HttpComplianceRepository implements ComplianceRepository {
   }
 }
 
-final apiConfigProvider = Provider<ApiConfig>((ref) => ApiConfig.environment());
+final apiConfigProvider = Provider<ApiConfig>((ref) {
+  final session = ref.watch(authProvider).value;
+  final fallback = ApiConfig.environment();
+  return ApiConfig(baseUrl: fallback.baseUrl, token: session?.token ?? fallback.token);
+});
 final httpClientProvider = Provider<http.Client>((ref) {
   final client = http.Client();
   ref.onDispose(client.close);

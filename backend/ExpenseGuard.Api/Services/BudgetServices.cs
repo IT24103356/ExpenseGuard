@@ -89,11 +89,15 @@ public sealed class DepartmentService(AppDbContext db) : IDepartmentService
 
 public sealed class BudgetService(AppDbContext db) : IBudgetService
 {
+    public const decimal MaxDepartmentBudget = 100_000_000m;
+
     public async Task<BudgetDto> AllocateAsync(AllocateBudgetRequest request, CancellationToken ct)
     {
         var department = await db.Departments.SingleOrDefaultAsync(d => d.DepartmentId == request.DepartmentId, ct)
             ?? throw new KeyNotFoundException("Department not found.");
         if (!department.IsActive) throw new InvalidBudgetOperationException("Department is inactive.");
+        if (request.Amount > MaxDepartmentBudget)
+            throw new InvalidBudgetOperationException($"A budget cannot exceed {MaxDepartmentBudget:N0}.");
 
         if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
         {
@@ -106,6 +110,12 @@ public sealed class BudgetService(AppDbContext db) : IBudgetService
         var overlaps = await db.Budgets.AnyAsync(b => b.DepartmentId == request.DepartmentId &&
             b.Currency == request.Currency && b.PeriodStart == request.PeriodStart && b.PeriodEnd == request.PeriodEnd, ct);
         if (overlaps) throw new DuplicateResourceException("A budget already exists for this department, period and currency.");
+
+        var allocated = await db.Budgets.Where(b => b.DepartmentId == request.DepartmentId && b.Currency == request.Currency && b.IsActive)
+            .SumAsync(b => b.AllocatedAmount, ct);
+        if (allocated + request.Amount > MaxDepartmentBudget)
+            throw new InvalidBudgetOperationException(
+                $"Department total cannot exceed {MaxDepartmentBudget:N0} {request.Currency}. Remaining capacity is {Math.Max(0, MaxDepartmentBudget - allocated):N2}.");
 
         var budget = new Budget
         {
@@ -201,7 +211,7 @@ public sealed class BudgetService(AppDbContext db) : IBudgetService
         var count = await query.CountAsync(ct);
         var items = await query.OrderBy(b => b.Department.DepartmentName).ThenBy(b => b.PeriodStart)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(b => new UtilizationDto(b.BudgetId, b.DepartmentId, b.Department.DepartmentName, b.Currency,
+            .Select(b => new UtilizationDto(b.BudgetId, b.DepartmentId, b.Department.DepartmentName, b.Name, b.Currency,
                 b.AllocatedAmount, b.ReservedAmount, b.SpentAmount,
                 b.AllocatedAmount - b.ReservedAmount - b.SpentAmount,
                 b.AllocatedAmount == 0 ? 0 : (b.ReservedAmount + b.SpentAmount) / b.AllocatedAmount * 100,

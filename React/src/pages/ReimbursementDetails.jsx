@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decideReimbursement, getReimbursement, processReimbursement, startApproval, submitPayment } from '../services/api';
-import { StatusBadge, LoadingSpinner, AmountDisplay, ErrorState, apiErrorMessage } from '../components/Shared';
+import { ApprovalProgress, StatusBadge, LoadingSpinner, AmountDisplay, ErrorState, apiErrorMessage } from '../components/Shared';
 import { useAuth } from '../auth/AuthContext';
 import { FiArrowLeft, FiCreditCard, FiPlay } from 'react-icons/fi';
 
@@ -30,10 +30,10 @@ export default function ReimbursementDetails() {
     onError: error => setActionMsg({ type: 'danger', text: apiErrorMessage(error) }),
   });
 
-  if (reimbursement.isPending) return <div className="page-content"><LoadingSpinner /></div>;
-  if (reimbursement.isError) return <div className="page-content"><ErrorState error={reimbursement.error} onRetry={reimbursement.refetch} /></div>;
+  if (reimbursement.isPending && !reimbursement.data) return <div className="page-content"><LoadingSpinner /></div>;
+  if (reimbursement.isError && !reimbursement.data) return <div className="page-content"><ErrorState error={reimbursement.error} onRetry={reimbursement.refetch} /></div>;
   const r = reimbursement.data;
-  const canApprove = auth.hasRole('Manager', 'DepartmentHead', 'Admin');
+  const canApprove = auth.hasRole('Manager', 'DepartmentHead', 'Finance', 'Admin');
   const canFinance = auth.hasRole('Finance', 'Admin');
 
   return (
@@ -77,6 +77,9 @@ export default function ReimbursementDetails() {
           <DetailRow label="Amount" value={<AmountDisplay amount={r.amount} />} />
           <DetailRow label="Currency" value={r.currency} />
           <DetailRow label="Status" value={<StatusBadge status={r.status} />} />
+          <div style={{ marginTop: 12 }}>
+            <ApprovalProgress steps={r.approvalSteps} currentRole={r.currentRequiredRole} />
+          </div>
           <DetailRow label="Payment ID" value={r.paymentId || '—'} />
         </div>
 

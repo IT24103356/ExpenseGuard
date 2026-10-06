@@ -19,8 +19,8 @@ public sealed class WorkflowsController(AppDbContext db) : ControllerBase
             .OrderByDescending(w => w.UpdatedAt)
             .Select(w => new
             {
-                w.WorkflowExecutionId, w.ExpenseClaimId, w.Objective, w.Status,
-                w.CorrelationId, w.CreatedAt, w.UpdatedAt
+                w.WorkflowExecutionId, w.SubjectType, w.ExpenseClaimId, w.PurchaseRequestId,
+                w.Objective, w.Status, w.CorrelationId, w.CreatedAt, w.UpdatedAt
             }).ToListAsync(ct));
 
     [HttpGet("{id:guid}")]
@@ -31,8 +31,8 @@ public sealed class WorkflowsController(AppDbContext db) : ControllerBase
             .Where(w => w.WorkflowExecutionId == id)
             .Select(w => new
             {
-                w.WorkflowExecutionId, w.ExpenseClaimId, w.Objective, w.Status,
-                w.CorrelationId, w.CreatedAt, w.UpdatedAt,
+                w.WorkflowExecutionId, w.SubjectType, w.ExpenseClaimId, w.PurchaseRequestId,
+                w.Objective, w.Status, w.CorrelationId, w.CreatedAt, w.UpdatedAt,
                 Steps = w.Steps.OrderBy(s => s.Sequence).Select(s => new
                 {
                     s.WorkflowStepId, s.Sequence, s.Name, s.Type, s.Status, s.Error,
@@ -84,8 +84,8 @@ public sealed class WorkflowsController(AppDbContext db) : ControllerBase
             .OrderByDescending(w => w.UpdatedAt)
             .Select(w => new
             {
-                w.WorkflowExecutionId, w.ExpenseClaimId, w.Objective, w.Status,
-                w.CorrelationId, w.CreatedAt, w.UpdatedAt,
+                w.WorkflowExecutionId, w.SubjectType, w.ExpenseClaimId, w.PurchaseRequestId,
+                w.Objective, w.Status, w.CorrelationId, w.CreatedAt, w.UpdatedAt,
                 Steps = w.Steps.OrderBy(s => s.Sequence).Select(s => new
                 {
                     s.WorkflowStepId, s.Sequence, s.Name, s.Type, s.Status, s.Error

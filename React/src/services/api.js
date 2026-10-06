@@ -25,6 +25,7 @@ export const setUnauthorizedHandler = handler => { onUnauthorized = handler; };
 export const loginRequest = credentials => api.post('/auth/login', credentials);
 
 const data = request => request.then(response => response.data);
+const jsonString = value => JSON.stringify(value ?? null);
 
 export const getMyProfile = () => data(api.get('/employees/me'));
 export const getEmployees = () => data(api.get('/employees'));
@@ -35,17 +36,24 @@ export const createPurchaseRequest = (body) => data(api.post('/purchase-requests
 export const updatePurchaseRequest = (id, body) => data(api.put(`/purchase-requests/${id}`, body));
 export const submitPurchaseRequest = (id) => data(api.post(`/purchase-requests/${id}/submit`));
 export const deletePurchaseRequest = (id) => data(api.delete(`/purchase-requests/${id}`));
+export const getPurchaseRequestApprovalQueue = () => data(api.get('/purchase-requests/approval-queue'));
+export const decidePurchaseRequest = (id, decision, comment) =>
+  data(api.post(`/purchase-requests/${id}/${decision}`, jsonString(comment), {
+    headers: { 'Content-Type': 'application/json' },
+  }));
 
 export const searchClaims = (params) => data(api.get('/claims', { params }));
 export const getClaim = (id) => data(api.get(`/claims/${id}`));
 export const createClaim = (body) => data(api.post('/claims', body));
 export const updateClaim = (id, body) => data(api.put(`/claims/${id}`, body));
 export const submitClaim = (id) => data(api.post(`/claims/${id}/submit`));
-export const resubmitClaim = (id, reason) => data(api.post(`/claims/${id}/resubmit`, reason, {
+export const resubmitClaim = (id, reason) => data(api.post(`/claims/${id}/resubmit`, jsonString(reason), {
   headers: { 'Content-Type': 'application/json' },
 }));
 export const deleteClaim = (id) => data(api.delete(`/claims/${id}`));
 export const getClaimHistory = (id) => data(api.get(`/claims/${id}/history`));
+export const getPurchaseRequestHistory = (id) => data(api.get(`/purchase-requests/${id}/history`));
+export const getRequestHistory = (params) => data(api.get('/request-history', { params }));
 export const uploadReceipt = (id, file) => {
   const body = new FormData();
   body.append('file', file);
@@ -62,7 +70,9 @@ export const processReimbursement = (id) => api.post(`/reimbursements/${id}/proc
 export const submitPayment = (id) => api.post(`/reimbursements/${id}/payment`);
 export const startApproval = (id, templateId) => api.post(`/reimbursements/${id}/approval-process`, null, { params: { templateId } });
 export const decideReimbursement = (id, decision, comment) =>
-  api.post(`/reimbursements/${id}/${decision}`, comment || null, { headers: { 'Content-Type': 'application/json' } });
+  api.post(`/reimbursements/${id}/${decision}`, jsonString(comment), {
+    headers: { 'Content-Type': 'application/json' },
+  });
 
 export const getRoles = () => api.get('/roles');
 export const assignRole = (employeeId, roleId) => api.put(`/roles/employees/${employeeId}`, { roleId });

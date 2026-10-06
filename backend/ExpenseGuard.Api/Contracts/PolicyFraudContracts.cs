@@ -8,7 +8,7 @@ public class CreatePolicyRequest : IValidatableObject
     [Required, StringLength(100)] public string Category { get; init; } = "";
     [Range(0, double.MaxValue)] public decimal? MinAmount { get; init; }
     [Range(0, double.MaxValue)] public decimal? MaxAmount { get; init; }
-    [Required, RegularExpression("^[A-Z]{3}$")] public string Currency { get; init; } = "USD";
+    [Required, RegularExpression("^[A-Z]{3}$")] public string Currency { get; init; } = "LKR";
     public bool ReceiptRequired { get; init; }
     [Range(-10000, 10000)] public int Priority { get; init; }
     public DateTime EffectiveFrom { get; init; }
@@ -40,7 +40,7 @@ public sealed record PolicyDto(
 public sealed class PolicyEvaluateRequest
 {
     [Range(1, int.MaxValue)] public int ExpenseClaimId { get; init; }
-    [Required, RegularExpression("^[A-Z]{3}$")] public string Currency { get; init; } = "USD";
+    [Required, RegularExpression("^[A-Z]{3}$")] public string Currency { get; init; } = "LKR";
     [StringLength(100)] public string? Designation { get; init; }
     [Range(0, double.MaxValue)] public decimal? ReceiptAmount { get; init; }
     public DateTime? At { get; init; }

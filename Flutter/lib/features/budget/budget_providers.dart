@@ -1,11 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/api_config.dart';
 import 'budget_api.dart';
 
-const _environmentApiUrl = String.fromEnvironment(
-  'EXPENSEGUARD_API_URL',
-  defaultValue: 'http://localhost:5000/api',
-);
+final _environmentApiUrl = expenseGuardApiBaseUrl();
 const _environmentToken = String.fromEnvironment('EXPENSEGUARD_AUTH_TOKEN');
 const _environmentBudgetId =
     String.fromEnvironment('EXPENSEGUARD_DEPARTMENT_BUDGET_ID');

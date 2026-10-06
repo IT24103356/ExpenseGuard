@@ -14,7 +14,7 @@ public sealed record BudgetTransactionDto(long Id, BudgetTransactionType Type, d
 public sealed record BudgetAlertDto(long Id, decimal ThresholdPercent, decimal UtilizationPercent,
     BudgetAlertSeverity Severity, BudgetAlertStatus Status, string Message, DateTime CreatedAt);
 public sealed record AvailabilityDto(int BudgetId, decimal RequestedAmount, decimal AvailableAmount, bool IsAvailable);
-public sealed record UtilizationDto(int BudgetId, int DepartmentId, string DepartmentName, string Currency,
+public sealed record UtilizationDto(int BudgetId, int DepartmentId, string DepartmentName, string BudgetName, string Currency,
     decimal AllocatedAmount, decimal ReservedAmount, decimal SpentAmount, decimal AvailableAmount,
     decimal UtilizationPercent, int OpenAlerts);
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
@@ -42,7 +42,7 @@ public sealed class AllocateBudgetRequest : IValidatableObject
     public DateOnly PeriodStart { get; init; }
     public DateOnly PeriodEnd { get; init; }
     [Required, RegularExpression("^[A-Z]{3}$")] public string Currency { get; init; } = "LKR";
-    [Range(typeof(decimal), "0.01", "9999999999999999")] public decimal Amount { get; init; }
+    [Range(typeof(decimal), "0.01", "100000000")] public decimal Amount { get; init; }
     [StringLength(100)] public string? IdempotencyKey { get; init; }
 
     public IEnumerable<DataAnnotationsValidationResult> Validate(ValidationContext validationContext)

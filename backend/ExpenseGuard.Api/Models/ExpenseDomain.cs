@@ -19,15 +19,20 @@ public class PurchaseRequest
     public int EmployeeId { get; set; }
     public string Description { get; set; } = string.Empty;
     public decimal EstimatedAmount { get; set; }
-    public string Currency { get; set; } = "USD";
+    public string Currency { get; set; } = "LKR";
     public string? Vendor { get; set; }
+    public string? Category { get; set; }
     public PurchaseRequestStatus Status { get; set; } = PurchaseRequestStatus.Draft;
     public DateTime? SubmittedAt { get; set; }
+    public string? CurrentRequiredRole { get; set; }
+    public string? ReviewJson { get; set; }
+    public string? ApprovalJson { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public long Version { get; set; }
     public Employee Employee { get; set; } = null!;
     public ICollection<ExpenseClaim> Claims { get; set; } = [];
+    public ICollection<PurchaseRequestStatusHistory> StatusHistory { get; set; } = [];
 }
 
 public class Receipt
@@ -45,6 +50,7 @@ public class Receipt
     public decimal? ExtractedAmount { get; set; }
     public DateTime? ExtractedDate { get; set; }
     public string? ExtractedCurrency { get; set; }
+    public string? ExtractedText { get; set; }
     public decimal? Confidence { get; set; }
     public bool RequiresManualReview { get; set; }
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
@@ -63,4 +69,16 @@ public class ClaimStatusHistory
     public string? Reason { get; set; }
     public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
     public ExpenseClaim ExpenseClaim { get; set; } = null!;
+}
+
+public class PurchaseRequestStatusHistory
+{
+    public int PurchaseRequestStatusHistoryId { get; set; }
+    public int PurchaseRequestId { get; set; }
+    public PurchaseRequestStatus FromStatus { get; set; }
+    public PurchaseRequestStatus ToStatus { get; set; }
+    public int ChangedByEmployeeId { get; set; }
+    public string? Reason { get; set; }
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+    public PurchaseRequest PurchaseRequest { get; set; } = null!;
 }

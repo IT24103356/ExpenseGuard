@@ -27,14 +27,14 @@ public sealed class PoliciesController(IPolicyService service) : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin,PolicyManager,Finance,Manager,Auditor")]
+    [Authorize(Roles = "Admin,PolicyManager,Finance,Manager,DepartmentHead,Auditor")]
     public async Task<ActionResult<PageResult<PolicyDto>>> List(
         [FromQuery] string? category, [FromQuery] int? departmentId, [FromQuery] bool? active,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default) =>
         Ok(await service.ListAsync(category, departmentId, active, page, pageSize, cancellationToken));
 
     [HttpPost("evaluate")]
-    [Authorize(Roles = "Admin,PolicyManager,Finance,Manager,Employee,Auditor")]
+    [Authorize(Roles = "Admin,PolicyManager,Finance,Manager,DepartmentHead,Employee,Auditor")]
     public async Task<ActionResult<PolicyEvaluationDto>> Evaluate(PolicyEvaluateRequest request, CancellationToken cancellationToken)
     {
         var result = await service.EvaluateAsync(request, cancellationToken);

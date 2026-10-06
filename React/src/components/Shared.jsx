@@ -9,7 +9,12 @@ export function LoadingSpinner() {
 
 export function apiErrorMessage(error, fallback = 'Something went wrong.') {
   const status = error?.response?.status;
-  if (status === 401) return 'Your session expired. Sign in again.';
+  const url = `${error?.config?.url || ''} ${error?.request?.responseURL || ''}`;
+  if (status === 401) {
+    return /\/auth\/login\b/.test(url)
+      ? 'Username or password is incorrect.'
+      : 'Your session expired. Sign in again.';
+  }
   if (status === 403) return 'You do not have permission to perform this action.';
   if (status === 409) return error.response?.data?.detail || error.response?.data?.error || 'The record changed. Refresh and try again.';
   return error?.response?.data?.detail || error?.response?.data?.error || fallback;
@@ -26,6 +31,38 @@ export function ErrorState({ error, onRetry }) {
 
 export function EmptyState({ message = 'No records found.' }) {
   return <div className="card empty-state">{message}</div>;
+}
+
+export function formatDesignation(employee) {
+  const title = employee?.designation || 'Not assigned';
+  return employee?.departmentName ? `${title} · ${employee.departmentName}` : title;
+}
+
+export function stageLabel(role) {
+  if (role === 'DepartmentHead') return 'Director';
+  if (role === 'Admin') return 'C-Level';
+  return role || 'Approver';
+}
+
+export function ApprovalProgress({ steps, currentRole, compact }) {
+  if (!steps?.length) {
+    return currentRole ? <span className="approval-now">Waiting for {stageLabel(currentRole)}</span> : null;
+  }
+  return (
+    <ol className={`approval-progress ${compact ? 'compact' : ''}`} aria-label="Approval stage">
+      {steps.map(step => {
+        const approved = String(step.status).toUpperCase() === 'APPROVED';
+        const rejected = ['REJECTED', 'REVISION_REQUIRED'].includes(String(step.status).toUpperCase());
+        const current = !approved && !rejected && step.requiredRole === currentRole;
+        return (
+          <li key={`${step.sequence}-${step.requiredRole}`} className={approved ? 'done' : rejected ? 'blocked' : current ? 'current' : 'pending'}>
+            <strong>{stageLabel(step.requiredRole)}</strong>
+            <small>{approved ? 'Approved' : rejected ? String(step.status).replaceAll('_', ' ') : current ? 'In review' : 'Waiting'}</small>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 export function AmountDisplay({ amount, currency = 'LKR', large }) {

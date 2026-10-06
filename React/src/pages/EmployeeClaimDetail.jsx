@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   correctReceipt, getClaim, getClaimHistory, resubmitClaim, updateClaim, uploadReceipt,
 } from '../services/api';
+import { ApprovalProgress } from '../components/Shared';
 
 const claimStatuses = ['Draft', 'Submitted', 'UnderReview', 'Approved', 'Rejected', 'NeedsCorrection', 'Cancelled'];
 const receiptStatuses = ['Pending', 'Processed', 'NeedsReview', 'Failed'];
@@ -56,7 +57,8 @@ export default function EmployeeClaimDetail() {
   };
   return <div className="page-content">
     <Link to="/employee" className="employee-back">← Back to employee workspace</Link>
-    <div className="employee-heading"><div><h2>Claim #{value.expenseClaimId}</h2><p>{currentStatus} · version {value.version}</p></div></div>
+    <div className="employee-heading"><div><h2>Claim #{value.expenseClaimId}</h2><p>{currentStatus} · version {value.version}</p>
+      <ApprovalProgress steps={value.approvalSteps} currentRole={value.currentRequiredRole} /></div></div>
     <div className="employee-grid">
       <form className="card" onSubmit={save}>
         <h3>Claim details</h3>
@@ -84,6 +86,7 @@ export default function EmployeeClaimDetail() {
             <label className="form-group"><span className="form-label">Extracted amount</span><input className="form-control" name="amount" type="number" step="0.01" defaultValue={receipt.extractedAmount || ''} /></label>
             <label className="form-group"><span className="form-label">Extracted date</span><input className="form-control" name="purchaseDate" type="date" defaultValue={receipt.extractedDate?.slice(0, 10) || ''} /></label>
             <label className="form-group"><span className="form-label">Currency</span><input className="form-control" name="currency" defaultValue={receipt.extractedCurrency || value.currency} /></label>
+            {receipt.extractedText && <label className="form-group"><span className="form-label">OCR text</span><textarea className="form-control" readOnly rows={6} value={receipt.extractedText} /></label>}
             <button className="btn btn-ghost">Confirm OCR corrections</button>
           </form>}
         </section>

@@ -8,7 +8,7 @@ public class Policy
     public string Category { get; set; } = string.Empty;
     public decimal? MinAmount { get; set; }
     public decimal? MaxAmount { get; set; }
-    public string Currency { get; set; } = "USD";
+    public string Currency { get; set; } = "LKR";
     public bool ReceiptRequired { get; set; }
     public bool IsActive { get; set; } = true;
     public int Priority { get; set; }

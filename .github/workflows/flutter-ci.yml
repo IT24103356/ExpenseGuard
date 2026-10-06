@@ -2,9 +2,10 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, integration/testing ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, integration/testing ]
+  workflow_dispatch:
 
 jobs:
   analyze:

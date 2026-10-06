@@ -23,10 +23,12 @@ export default function WorkflowAudit() {
   if (!id) {
     return <div className="page-content"><h2>Workflow executions</h2>
       {query.data.length === 0 ? <EmptyState message="No workflow executions found." /> :
-        <div className="table-wrapper"><table><thead><tr><th>Execution</th><th>Claim</th><th>Status</th><th>Updated</th></tr></thead>
+        <div className="table-wrapper"><table><thead><tr><th>Execution</th><th>Type</th><th>Subject</th><th>Status</th><th>Updated</th></tr></thead>
           <tbody>{query.data.map(item => <tr key={item.workflowExecutionId}>
             <td><Link to={`/workflows/${item.workflowExecutionId}`}>{item.workflowExecutionId}</Link></td>
-            <td>{item.expenseClaimId}</td><td><StatusBadge status={item.status} /></td>
+            <td>{item.subjectType === 'purchase_request' ? 'Purchase request' : 'Claim'}</td>
+            <td>{item.purchaseRequestId ? `PR #${item.purchaseRequestId}` : `Claim #${item.expenseClaimId}`}</td>
+            <td><StatusBadge status={item.status} /></td>
             <td>{new Date(item.updatedAt).toLocaleString()}</td>
           </tr>)}</tbody></table></div>}
     </div>;
@@ -37,6 +39,7 @@ export default function WorkflowAudit() {
     <div className="page-heading"><div><h2>Workflow execution</h2><code>{workflow.workflowExecutionId}</code></div>
       <button className="btn btn-ghost btn-sm" disabled={query.isFetching} onClick={() => { query.refetch(); audit.refetch(); }}>Refresh</button></div>
     <div className="card"><StatusBadge status={workflow.status} /><p>{workflow.objective}</p>
+      <p>{workflow.subjectType === 'purchase_request' ? `Purchase request #${workflow.purchaseRequestId}` : `Claim #${workflow.expenseClaimId}`}</p>
       <p>Correlation ID: <code>{workflow.correlationId}</code></p></div>
     <h3>Steps</h3>
     {workflow.steps.length === 0 ? <EmptyState message="No execution steps recorded." /> :

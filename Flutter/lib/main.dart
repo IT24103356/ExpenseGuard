@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'auth/auth_provider.dart';
 import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/my_claims_screen.dart';
 import 'screens/claim_detail_screen.dart';
 import 'screens/reimbursement_status_screen.dart';
@@ -29,15 +30,16 @@ class ReimbursementApp extends ConsumerWidget {
     }
     final signedIn = auth.value != null;
     final router = GoRouter(
-      initialLocation: signedIn ? '/claims' : '/login',
+      initialLocation: signedIn ? '/home' : '/login',
       redirect: (context, state) {
         final atLogin = state.matchedLocation == '/login';
         if (!signedIn && !atLogin) return '/login';
-        if (signedIn && atLogin) return '/claims';
+        if (signedIn && atLogin) return '/home';
         return null;
       },
       routes: [
         GoRoute(path: '/login', builder: (ctx, state) => const LoginScreen()),
+        GoRoute(path: '/home', builder: (ctx, state) => const HomeScreen()),
         GoRoute(path: '/claims', builder: (ctx, state) => const MyClaimsScreen()),
         GoRoute(path: '/claims/:id', builder: (ctx, state) => ClaimDetailScreen(claimId: state.pathParameters['id']!)),
         GoRoute(path: '/reimbursement/:id', builder: (ctx, state) => ReimbursementStatusScreen(reimbursementId: state.pathParameters['id']!)),

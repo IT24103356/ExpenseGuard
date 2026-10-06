@@ -83,8 +83,24 @@ public sealed class ExpenseWorkflowTests
         var receipt = await service.UploadAsync(
             10, new MemoryStream(bytes), "receipt.pdf", "application/pdf", bytes.Length, 1, default);
         Assert.Equal(64, receipt.Sha256.Length);
+        Assert.Equal(DateTimeKind.Utc, receipt.ExtractedDate?.Kind);
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.UploadAsync(
             10, new MemoryStream(bytes), "copy.pdf", "application/pdf", bytes.Length, 1, default));
+    }
+
+    [Fact]
+    public async Task Claim_create_stores_unspecified_purchase_date_as_utc()
+    {
+        await using var db = Db();
+        var service = new ClaimService(db);
+        var created = await service.CreateAsync(new ClaimWriteDto
+        {
+            Amount = 25, Category = "Advertising", Description = "Ads", Currency = "USD",
+            PurchaseDate = new DateTime(2026, 10, 6)
+        }, 1, default);
+
+        Assert.Equal(DateTimeKind.Utc, created.PurchaseDate?.Kind);
+        Assert.Equal(new DateTime(2026, 10, 6, 0, 0, 0, DateTimeKind.Utc), created.PurchaseDate);
     }
 
     [Fact]
@@ -104,5 +120,47 @@ public sealed class ExpenseWorkflowTests
         Assert.False(result.RequiresManualReview);
         Assert.Equal("EUR", result.ExtractedCurrency);
         Assert.NotNull(result.CorrectedAt);
+    }
+
+    [Fact]
+    public void Receipt_text_parser_reads_vendor_total_and_date()
+    {
+        const string text = """
+            123 Marketing Lane
+            San Francisco, CA 94107
+            BrightReach Media
+            Digital Advertising Solutions
+            RECEIPT
+            Date: April 26, 2025
+            Advertising Services
+            Total Paid: $15,000.00
+            """;
+        var parsed = ReceiptTextParser.Enrich(new ReceiptExtraction("123 Marketing Lane", null, null, null, 0.5m, true, text));
+        Assert.Equal("BrightReach Media", parsed.Vendor);
+        Assert.Equal(15000.00m, parsed.Amount);
+        Assert.Equal(new DateTime(2025, 4, 26, 0, 0, 0, DateTimeKind.Utc), parsed.Date);
+        Assert.Equal("USD", parsed.Currency);
+        Assert.False(parsed.RequiresManualReview);
+    }
+
+    [Fact]
+    public async Task Ocr_failure_still_stores_the_receipt()
+    {
+        await using var db = Db();
+        db.ExpenseClaims.Add(new ExpenseClaim { ExpenseClaimId = 10, EmployeeId = 1 });
+        await db.SaveChangesAsync();
+        var bytes = Encoding.UTF8.GetBytes("receipt");
+        await using var stream = new MemoryStream(bytes);
+        var result = await new ReceiptService(db, new FakeReceiptStorage(), new ThrowingOcr())
+            .UploadAsync(10, stream, "shot.png", "image/png", bytes.Length, 1, default);
+        Assert.Equal("shot.png", result.FileName);
+        Assert.True(result.RequiresManualReview);
+        Assert.Equal(ReceiptProcessingStatus.NeedsReview, result.ProcessingStatus);
+    }
+
+    private sealed class ThrowingOcr : IReceiptOcr
+    {
+        public Task<ReceiptExtraction> ExtractAsync(Stream content, string fileName, string contentType, CancellationToken ct, string? sourceUrl = null)
+            => throw new HttpRequestException("Response status code does not indicate success: 413 (Payload Too Large).");
     }
 }

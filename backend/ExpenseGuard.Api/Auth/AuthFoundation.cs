@@ -91,6 +91,14 @@ public sealed class OwnsReimbursementHandler(AppDbContext db)
                 p.ReimbursementId == reimbursementId &&
                 p.Status == ApprovalStatuses.Pending &&
                 p.Steps.Any(s => s.Sequence == p.CurrentSequence && s.RequiredRole == role)))
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
+        if (await db.ApprovalProcesses.AnyAsync(p =>
+                p.ReimbursementId == reimbursementId &&
+                p.Steps.Any(s => s.DecidedByEmployeeId == employeeId)))
             context.Succeed(requirement);
     }
 }
