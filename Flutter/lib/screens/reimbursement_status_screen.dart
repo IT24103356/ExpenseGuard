@@ -40,14 +40,18 @@ class _ReimbursementStatusScreenState extends ConsumerState<ReimbursementStatusS
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Reimbursement Status')), body: const Center(child: CircularProgressIndicator()));
-    if (_error != null) return Scaffold(
-      appBar: AppBar(title: const Text('Reimbursement Status')),
-      body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(_error.toString(), textAlign: TextAlign.center),
-        OutlinedButton(onPressed: _load, child: const Text('Retry')),
-      ])),
-    );
+    if (_loading) {
+      return Scaffold(appBar: AppBar(title: const Text('Reimbursement Status')), body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Reimbursement Status')),
+        body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(_error.toString(), textAlign: TextAlign.center),
+          OutlinedButton(onPressed: _load, child: const Text('Retry')),
+        ])),
+      );
+    }
 
     final d = _data!;
     final status = d['status'] as String? ?? '';
@@ -87,7 +91,7 @@ class _ReimbursementStatusScreenState extends ConsumerState<ReimbursementStatusS
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.red.shade900.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade700.withOpacity(0.4))),
+                      decoration: BoxDecoration(color: Colors.red.shade900.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade700.withValues(alpha: 0.4))),
                       child: Row(children: [
                         Icon(Icons.error_outline, color: Colors.red.shade400, size: 18),
                         const SizedBox(width: 8),
@@ -99,7 +103,7 @@ class _ReimbursementStatusScreenState extends ConsumerState<ReimbursementStatusS
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.blue.shade900.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade700.withOpacity(0.4))),
+                      decoration: BoxDecoration(color: Colors.blue.shade900.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade700.withValues(alpha: 0.4))),
                       child: Row(children: [
                         Icon(Icons.info_outline, color: Colors.blue.shade400, size: 18),
                         const SizedBox(width: 8),
@@ -179,7 +183,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.5))),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withValues(alpha: 0.5))),
     child: Text(status.replaceAll('_', ' '), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
   );
 }

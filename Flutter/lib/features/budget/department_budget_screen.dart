@@ -171,7 +171,7 @@ class _ImpactResult extends ConsumerWidget {
           data: (impact) {
             final color = impact.isAvailable ? Colors.green : Colors.orange;
             return Card(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               child: ListTile(
                 leading: Icon(
                   impact.isAvailable ? Icons.check_circle : Icons.warning,

@@ -30,13 +30,17 @@ class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Payment Status')), body: const Center(child: CircularProgressIndicator()));
-    if (_error != null) return Scaffold(
-      appBar: AppBar(title: const Text('Payment Status')),
-      body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(_error.toString()), OutlinedButton(onPressed: _load, child: const Text('Retry')),
-      ])),
-    );
+    if (_loading) {
+      return Scaffold(appBar: AppBar(title: const Text('Payment Status')), body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Payment Status')),
+        body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(_error.toString()), OutlinedButton(onPressed: _load, child: const Text('Retry')),
+        ])),
+      );
+    }
     final d = _data!;
     final isPaid = d['status'] == 'PAID';
     return Scaffold(

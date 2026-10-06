@@ -86,7 +86,7 @@ class _ClaimCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade900.withOpacity(0.3),
+                  color: Colors.green.shade900.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text('Ref: ${claim['paymentReference']}',
@@ -134,9 +134,9 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.15),
+      color: color.withValues(alpha: 0.15),
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: color.withOpacity(0.4)),
+      border: Border.all(color: color.withValues(alpha: 0.4)),
     ),
     child: Text(status.replaceAll('_', ' '),
         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.5)),
