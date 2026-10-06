@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiGrid, FiList, FiDollarSign, FiBarChart2, FiActivity, FiSettings, FiUser, FiShield, FiAlertTriangle } from 'react-icons/fi';
 import { useAuth } from '../auth/AuthContext';
+import Logo from './Logo';
 
 const navItems = [
   { section: 'Employee', items: [
@@ -37,10 +38,10 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-icon">💰</div>
+        <Logo />
         <div>
-          <h2>ReimburseAI</h2>
-          <span>Finance Module</span>
+          <h2>ExpenseGuard</h2>
+          <span>Corporate expense control</span>
         </div>
       </div>
       <nav className="sidebar-nav">

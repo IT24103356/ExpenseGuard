@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../auth/ThemeContext';
 import { isNavActive, navSectionsFor } from '../auth/access';
+import Logo from './Logo';
 import { formatDesignation } from './Shared';
 import { getMyProfile } from '../services/api';
 
@@ -28,7 +29,7 @@ export default function TopNav() {
   return (
     <header className="top-nav">
       <div className="top-nav-brand">
-        <div className="logo-icon" aria-hidden="true">EG</div>
+        <Logo />
         <div>
           <strong>ExpenseGuard</strong>
           <span>Corporate expense control</span>
