@@ -127,6 +127,8 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    if (DemoDataSeeder.ResetRequested())
+        app.Logger.LogWarning("RESET_DEMO=true: wiping operational data and reseeding the Northstar demo.");
     DemoDataSeeder.SeedAsync(db).GetAwaiter().GetResult();
     if (app.Environment.IsDevelopment())
     {

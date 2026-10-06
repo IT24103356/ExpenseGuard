@@ -13,8 +13,14 @@ public static class DemoDataSeeder
 
     public static decimal ToLkr(decimal usd) => decimal.Round(usd * UsdToLkr, 2);
 
+    public static bool ResetRequested() =>
+        string.Equals(Environment.GetEnvironmentVariable("RESET_DEMO"), "true", StringComparison.OrdinalIgnoreCase);
+
     public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
     {
+        if (ResetRequested())
+            await ResetOperationalDataAsync(db, ct);
+
         if (await db.Departments.AnyAsync(d => d.Code == "EXEC", ct) &&
             await db.Employees.CountAsync(ct) >= 29)
         {
@@ -438,6 +444,7 @@ public static class DemoDataSeeder
                   "Policies",
                   "Receipts",
                   "ClaimStatusHistories",
+                  "PurchaseRequestStatusHistories",
                   "Reimbursements",
                   "FraudFlags",
                   "FraudEvaluations",
