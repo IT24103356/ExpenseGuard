@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth/auth_provider.dart';
 
-class PaymentStatusScreen extends StatefulWidget {
+class PaymentStatusScreen extends ConsumerStatefulWidget {
   final String reimbursementId;
   const PaymentStatusScreen({super.key, required this.reimbursementId});
 
   @override
-  State<PaymentStatusScreen> createState() => _PaymentStatusScreenState();
+  ConsumerState<PaymentStatusScreen> createState() => _PaymentStatusScreenState();
 }
 
-class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
+class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen> {
   Map<String, dynamic>? _data;
   bool _loading = true;
+  Object? _error;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -19,16 +21,26 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final d = await ApiService.getReimbursement(widget.reimbursementId);
+      final d = await ref.read(apiProvider).getReimbursement(int.parse(widget.reimbursementId));
       setState(() { _data = d; _loading = false; });
-    } catch (_) {
-      setState(() { _data = _mockData(); _loading = false; });
+    } catch (error) {
+      setState(() { _error = error; _loading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Payment Status')), body: const Center(child: CircularProgressIndicator()));
+    if (_loading) {
+      return Scaffold(appBar: AppBar(title: const Text('Payment Status')), body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Payment Status')),
+        body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(_error.toString()), OutlinedButton(onPressed: _load, child: const Text('Retry')),
+        ])),
+      );
+    }
     final d = _data!;
     final isPaid = d['status'] == 'PAID';
     return Scaffold(
@@ -77,11 +89,6 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
     );
   }
 
-  Map<String, dynamic> _mockData() => {
-    'id': widget.reimbursementId, 'amount': 25000.0, 'currency': 'LKR',
-    'status': 'PAID', 'paymentReference': 'PAY-10001', 'paymentProvider': 'SandboxProvider',
-    'departmentId': 'DEPT-ENG', 'completedAt': '2026-09-16T10:30:00Z', 'failureReason': null,
-  };
 }
 
 class _PayRow extends StatelessWidget {

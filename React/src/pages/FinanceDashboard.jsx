@@ -5,15 +5,15 @@ import {
 } from 'recharts';
 import { getFinanceDashboard } from '../services/api';
 import { LoadingSpinner, AmountDisplay, StatusBadge } from '../components/Shared';
+import { useTheme } from '../auth/ThemeContext';
+import { chartAxis, chartTooltipStyle } from '../theme/chartStyles';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
-const CUSTOM_TOOLTIP_STYLE = {
-  backgroundColor: '#1a2236', border: '1px solid #1e293b',
-  borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: 13
-};
-
 export default function FinanceDashboard() {
+  const { theme } = useTheme();
+  const tooltipStyle = chartTooltipStyle();
+  const { tick: axisStroke, grid: gridStroke } = chartAxis(theme);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear());
@@ -84,10 +84,10 @@ export default function FinanceDashboard() {
           <div className="chart-title">Department: Budget vs Actual Spend</div>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={d.departmentBreakdown || []} margin={{ left: 0, right: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="departmentName" tick={{ fill: '#64748b', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={v => `${(v/1e6).toFixed(1)}M`} />
-              <Tooltip contentStyle={CUSTOM_TOOLTIP_STYLE} formatter={v => [`LKR ${v.toLocaleString()}`, '']} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="departmentName" tick={{ fill: axisStroke, fontSize: 12 }} />
+              <YAxis tick={{ fill: axisStroke, fontSize: 11 }} tickFormatter={v => `${(v/1e6).toFixed(1)}M`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => [`LKR ${v.toLocaleString()}`, '']} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
               <Bar dataKey="allocatedBudget" name="Allocated" fill="#6366f1" radius={[4, 4, 0, 0]} />
               <Bar dataKey="totalSpent" name="Spent" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -112,7 +112,7 @@ export default function FinanceDashboard() {
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={CUSTOM_TOOLTIP_STYLE} formatter={v => `LKR ${v.toLocaleString()}`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `LKR ${v.toLocaleString()}`} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
             </PieChart>
           </ResponsiveContainer>
@@ -129,10 +129,10 @@ export default function FinanceDashboard() {
                   <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={v => `${(v/1e3).toFixed(0)}K`} />
-              <Tooltip contentStyle={CUSTOM_TOOLTIP_STYLE} formatter={v => `LKR ${v.toLocaleString()}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="month" tick={{ fill: axisStroke, fontSize: 11 }} />
+              <YAxis tick={{ fill: axisStroke, fontSize: 11 }} tickFormatter={v => `${(v/1e3).toFixed(0)}K`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `LKR ${v.toLocaleString()}`} />
               <Area type="monotone" dataKey="totalSpend" stroke="#6366f1" fill="url(#gradTrend)" strokeWidth={2} name="Spend" />
             </AreaChart>
           </ResponsiveContainer>

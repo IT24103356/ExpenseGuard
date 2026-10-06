@@ -47,3 +47,20 @@ build/
 
 # Temp / local
 temp_repo/
+
+# Docs / examples (not needed to build or run the code)
+Docs/
+Documentation/
+LOCAL_HANDOFF.md
+.env.example
+React/README.md
+Flutter/README.md
+ai/expenseguard-agents/README.md
+policy_compliance_mobile/README.md
+
+# Python
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+.venv/

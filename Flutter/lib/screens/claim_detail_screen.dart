@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../services/api_service.dart';
+import '../auth/auth_provider.dart';
 
-class ClaimDetailScreen extends StatefulWidget {
+class ClaimDetailScreen extends ConsumerStatefulWidget {
   final String claimId;
   const ClaimDetailScreen({super.key, required this.claimId});
 
   @override
-  State<ClaimDetailScreen> createState() => _ClaimDetailScreenState();
+  ConsumerState<ClaimDetailScreen> createState() => _ClaimDetailScreenState();
 }
 
-class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
+class _ClaimDetailScreenState extends ConsumerState<ClaimDetailScreen> {
   Map<String, dynamic>? _reimb;
   Map<String, dynamic>? _workflow;
   bool _loading = true;
+  Object? _error;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -21,18 +23,31 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final reimb = await ApiService.getReimbursementByClaim(widget.claimId);
+      final session = ref.read(authProvider).requireValue!;
+      final all = await ref.read(apiProvider).getEmployeeReimbursements(session.employeeId);
+      final reimb = (all.cast<Map<String, dynamic>>()).firstWhere(
+        (item) => item['expenseClaimId'].toString() == widget.claimId);
       setState(() => _reimb = reimb);
-      final wf = await ApiService.getWorkflowByClaim(widget.claimId);
+      final wf = await ref.read(apiProvider).getWorkflowByClaim(int.parse(widget.claimId));
       setState(() { _workflow = wf; _loading = false; });
-    } catch (_) {
-      setState(() { _reimb = _mockReimb(); _workflow = _mockWorkflow(); _loading = false; });
+    } catch (error) {
+      setState(() { _error = error; _loading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Claim Details')), body: const Center(child: CircularProgressIndicator()));
+    if (_loading) {
+      return Scaffold(appBar: AppBar(title: const Text('Claim Details')), body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Claim Details')),
+        body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(_error.toString()), OutlinedButton(onPressed: _load, child: const Text('Retry')),
+        ])),
+      );
+    }
     final d = _reimb!;
     return Scaffold(
       appBar: AppBar(
@@ -45,7 +60,7 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
           Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Claim Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 12),
-            _Row('Claim ID', widget.claimId.substring(0, 16) + '…'),
+            _Row('Claim ID', widget.claimId),
             _Row('Amount', 'LKR ${(d['amount'] as num?)?.toStringAsFixed(2)}'),
             _Row('Status', d['status']),
             _Row('Department', d['departmentId']),
@@ -55,11 +70,19 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
           if (_workflow != null) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Workflow Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 4),
-            Text('${_workflow!['workflowId']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontFamily: 'monospace')),
+            Text('${_workflow!['workflowExecutionId']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontFamily: 'monospace')),
             const SizedBox(height: 12),
             ...((_workflow!['steps'] as List?) ?? []).map((s) => _StepRow(step: s)),
           ]))),
           const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => context.go(int.tryParse(widget.claimId) == null
+                ? '/policy-guidance'
+                : '/policy-guidance?claimId=${Uri.encodeQueryComponent(widget.claimId)}'),
+            icon: const Icon(Icons.policy_outlined),
+            label: const Text('Review compliance and revise'),
+          ),
+          const SizedBox(height: 8),
           if (d['status'] == 'PAID')
             ElevatedButton.icon(
               onPressed: () => context.go('/payment/${d['id']}'),
@@ -72,18 +95,6 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
     );
   }
 
-  Map<String, dynamic> _mockReimb() => { 'id': 'mock-id', 'amount': 25000.0, 'currency': 'LKR', 'status': 'PAID', 'departmentId': 'DEPT-ENG', 'requestedAt': '2026-09-15T10:00:00Z' };
-  Map<String, dynamic> _mockWorkflow() => {
-    'workflowId': 'WF-10001', 'status': 'WAITING_FOR_APPROVAL',
-    'steps': [
-      { 'stepName': 'INTAKE', 'status': 'COMPLETED', 'agentName': 'ExpenseExtractionAgent' },
-      { 'stepName': 'POLICY_CHECK', 'status': 'COMPLETED', 'agentName': 'PolicyComplianceAgent' },
-      { 'stepName': 'RISK_CHECK', 'status': 'COMPLETED', 'agentName': 'FraudAnomalyRiskAgent' },
-      { 'stepName': 'HUMAN_APPROVAL', 'status': 'WAITING_FOR_HUMAN', 'agentName': 'Human Manager' },
-      { 'stepName': 'BUDGET_CHECK', 'status': 'PENDING', 'agentName': 'BudgetAgent' },
-      { 'stepName': 'PAYMENT', 'status': 'PENDING', 'agentName': 'PaymentSandbox' },
-    ]
-  };
 }
 
 class _Row extends StatelessWidget {
@@ -122,9 +133,9 @@ class _StepRow extends StatelessWidget {
       child: Row(children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 8),
-        Text((step['stepName'] as String? ?? '').replaceAll('_', ' '), style: const TextStyle(fontSize: 13)),
+        Text((step['name'] as String? ?? '').replaceAll('_', ' '), style: const TextStyle(fontSize: 13)),
         const Spacer(),
-        Text(step['agentName'] ?? '', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        Text(step['type'] ?? '', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
       ]),
     );
   }

@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../services/api_service.dart';
+import '../auth/auth_provider.dart';
 
-class ReimbursementStatusScreen extends StatefulWidget {
+class ReimbursementStatusScreen extends ConsumerStatefulWidget {
   final String reimbursementId;
   const ReimbursementStatusScreen({super.key, required this.reimbursementId});
 
   @override
-  State<ReimbursementStatusScreen> createState() => _ReimbursementStatusScreenState();
+  ConsumerState<ReimbursementStatusScreen> createState() => _ReimbursementStatusScreenState();
 }
 
-class _ReimbursementStatusScreenState extends State<ReimbursementStatusScreen> {
+class _ReimbursementStatusScreenState extends ConsumerState<ReimbursementStatusScreen> {
   Map<String, dynamic>? _data;
   Map<String, dynamic>? _workflow;
   bool _loading = true;
+  Object? _error;
 
   @override
   void initState() {
@@ -22,23 +24,34 @@ class _ReimbursementStatusScreenState extends State<ReimbursementStatusScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
-      final reimb = await ApiService.getReimbursement(widget.reimbursementId);
+      final reimb = await ref.read(apiProvider).getReimbursement(int.parse(widget.reimbursementId));
       setState(() => _data = reimb);
       try {
-        final wf = await ApiService.getWorkflowByClaim(reimb['expenseClaimId'] ?? '');
+        final wf = await ref.read(apiProvider).getWorkflowByClaim(reimb['expenseClaimId'] as int);
         setState(() => _workflow = wf);
       } catch (_) {}
-    } catch (_) {
-      setState(() => _data = _mockData());
+    } catch (error) {
+      setState(() => _error = error);
     }
     setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Reimbursement Status')), body: const Center(child: CircularProgressIndicator()));
+    if (_loading) {
+      return Scaffold(appBar: AppBar(title: const Text('Reimbursement Status')), body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Reimbursement Status')),
+        body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(_error.toString(), textAlign: TextAlign.center),
+          OutlinedButton(onPressed: _load, child: const Text('Retry')),
+        ])),
+      );
+    }
 
     final d = _data!;
     final status = d['status'] as String? ?? '';
@@ -78,7 +91,7 @@ class _ReimbursementStatusScreenState extends State<ReimbursementStatusScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.red.shade900.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade700.withOpacity(0.4))),
+                      decoration: BoxDecoration(color: Colors.red.shade900.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade700.withValues(alpha: 0.4))),
                       child: Row(children: [
                         Icon(Icons.error_outline, color: Colors.red.shade400, size: 18),
                         const SizedBox(width: 8),
@@ -90,7 +103,7 @@ class _ReimbursementStatusScreenState extends State<ReimbursementStatusScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.blue.shade900.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade700.withOpacity(0.4))),
+                      decoration: BoxDecoration(color: Colors.blue.shade900.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade700.withValues(alpha: 0.4))),
                       child: Row(children: [
                         Icon(Icons.info_outline, color: Colors.blue.shade400, size: 18),
                         const SizedBox(width: 8),
@@ -142,12 +155,6 @@ class _ReimbursementStatusScreenState extends State<ReimbursementStatusScreen> {
     try { return DateTime.parse(d).toLocal().toString().substring(0, 16); } catch (_) { return d.toString(); }
   }
 
-  Map<String, dynamic> _mockData() => {
-    'id': widget.reimbursementId, 'employeeId': 'EMP-001', 'departmentId': 'DEPT-ENG',
-    'amount': 25000.0, 'currency': 'LKR', 'status': 'PAID',
-    'paymentReference': 'PAY-10001', 'completedAt': '2026-09-16T10:30:00Z',
-    'requestedAt': '2026-09-15T10:00:00Z', 'failureReason': null,
-  };
 }
 
 class _InfoRow extends StatelessWidget {
@@ -176,7 +183,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.5))),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withValues(alpha: 0.5))),
     child: Text(status.replaceAll('_', ' '), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
   );
 }
@@ -194,7 +201,7 @@ class _WorkflowCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Workflow Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           const SizedBox(height: 4),
-          Text('${workflow['workflowId']} • ${workflow['status']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+          Text('${workflow['workflowExecutionId']} • ${workflow['status']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
           const SizedBox(height: 16),
           ...steps.map((step) => _StepRow(step: step)),
         ]),
@@ -221,9 +228,9 @@ class _StepRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(children: [
         icon, const SizedBox(width: 10),
-        Text((step['stepName'] as String? ?? '').replaceAll('_', ' '), style: const TextStyle(fontSize: 13)),
+        Text((step['name'] as String? ?? '').replaceAll('_', ' '), style: const TextStyle(fontSize: 13)),
         const Spacer(),
-        Text(step['agentName'] ?? '', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        Text(step['type'] ?? '', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
       ]),
     );
   }
