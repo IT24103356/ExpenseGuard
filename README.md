@@ -18,39 +18,15 @@ ExpenseGuard uses a modern, distributed architecture:
 
 ```
 ExpenseGuard/
-├── .github/
-│   └── workflows/
-│       └── backend-ci.yml           # CI workflow for build and test validation
+├── .github/workflows/               # Backend, React, Flutter, and agents CI
 ├── backend/
 │   ├── ExpenseGuard.sln             # Unified solution (.NET 8)
-│   ├── ExpenseGuard.slnx            # Solution definition
-│   ├── ExpenseGuard.Api/            # Core shared API models & context
-│   │   ├── Models/                  # Shared domain entities
-│   │   └── Data/AppDbContext.cs     # Shared database context
-│   ├── ReimbursementBudget.API/     # Reimbursement & Budget Tracking Service
-│   │   ├── Agents/                  # Coordinator/Planner Agent
-│   │   ├── Controllers/             # RESTful API controllers
-│   │   ├── Data/                    # DbContext, Configurations, Migrations, Seed
-│   │   ├── DTOs/                    # Request/Response data transfer objects
-│   │   ├── Infrastructure/Payment/  # Mock payment gateway sandbox
-│   │   ├── Services/                # Business logic services
-│   │   └── Tools/                   # Agent tool execution toolbox
-│   └── ReimbursementBudget.Tests/   # Unit & Integration Tests (20 tests)
-├── Docs/
-│   ├── ADR.md                       # Architecture Decision Records
-│   ├── CoordinatorAgent.md          # Coordinator/Planner Agent specification
-│   └── Testing.md                   # Comprehensive testing guide & test matrix
-├── Flutter/                         # Flutter Mobile App for Employees
-│   ├── lib/
-│   │   ├── screens/                 # Mobile claim submission & tracking screens
-│   │   └── services/                # Backend API integration service
-│   └── pubspec.yaml
-└── React/                           # React Web Dashboard for Finance Admins
-    ├── src/
-    │   ├── components/              # UI widgets and layouts
-    │   ├── pages/                   # Finance & Budget dashboards, reports, workflow monitor
-    │   └── services/api.js          # API service client with JWT interceptor
-    └── package.json
+│   ├── ExpenseGuard.Api/            # Expense, budget, policy, and workflow API
+│   └── ExpenseGuard.Api.Tests/      # API unit and acceptance tests
+├── Flutter/                         # Employee mobile / Chrome app
+├── React/                           # Web dashboard for approvers and finance
+├── ai/expenseguard-agents/          # LangGraph coordinator, policy, and fraud agents
+└── docker-compose.yml
 ```
 
 ---
@@ -68,10 +44,10 @@ dotnet build ExpenseGuard.sln
 dotnet test ExpenseGuard.sln
 ```
 
-To run the Reimbursement & Budget Tracking API:
+To run the API:
 ```bash
-cd backend/ReimbursementBudget.API
-dotnet run
+cd backend/ExpenseGuard.Api
+dotnet run --launch-profile http
 ```
 Swagger UI available at: `http://localhost:5000/swagger`
 
@@ -98,11 +74,8 @@ flutter run
 
 ---
 
-## Business Component: Reimbursement & Budget Tracking
+## Expense, budget, and approval workflow
 
-**Owner / Student ID:** IT24101739  
-**Agentic AI Responsibility:** Coordinator/Planner Agent
-
-- **Workflow Coordination:** Coordinates the end-to-end expense lifecycle from policy validation and fraud detection delegation to human approval routing, finance batch processing, and payment execution.
-- **Budget Tracking:** Enforces department budget caps, reservation mechanisms, utilization alerts, and fiscal period resets.
-- **Payment Sandbox:** Simulates asynchronous payment disbursement with realistic latency, idempotency keys, and transaction references.
+- **Workflow coordination:** ExpenseGuard.Api is the source of truth for claims and purchase requests. LangGraph agents return advisory policy/fraud results only.
+- **Budget tracking:** Department budget caps, reservations, utilization, and fiscal periods live in the API.
+- **Human approval:** Managers, department heads, and finance review queued work in the React dashboard.
