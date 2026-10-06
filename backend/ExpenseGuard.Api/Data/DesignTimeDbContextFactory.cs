@@ -8,6 +8,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<App
     public AppDbContext CreateDbContext(string[] args)
     {
         var connection = Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+            ?? Environment.GetEnvironmentVariable("DATABASE_URL")
             ?? "Host=localhost;Database=ExpenseGuard_integration;Username=postgres;Password=postgres";
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(connection)
