@@ -73,8 +73,8 @@ class _PolicyGuidanceScreenState extends ConsumerState<PolicyGuidanceScreen> {
           const SizedBox(height: 16),
           SegmentedButton<String>(
             segments: const [
-              ButtonSegment(value: 'claims', label: Text('Claims'), icon: Icon(Icons.receipt_long)),
-              ButtonSegment(value: 'requests', label: Text('Requests'), icon: Icon(Icons.shopping_cart_outlined)),
+              ButtonSegment(value: 'claims', label: Text('Claims'), icon: Icon(Icons.receipt)),
+              ButtonSegment(value: 'requests', label: Text('Requests'), icon: Icon(Icons.shopping_cart)),
             ],
             selected: {_kind},
             onSelectionChanged: (value) => setState(() {
@@ -179,7 +179,7 @@ class _ClaimFeedback extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(ok ? Icons.check_circle : Icons.edit_note, color: ok ? Colors.green : Colors.orange),
+          Icon(ok ? Icons.check_circle : Icons.edit, color: ok ? Colors.green : Colors.orange),
           const SizedBox(width: 8),
           Text(ok ? 'Ready for approval' : 'Needs revision', style: const TextStyle(fontWeight: FontWeight.w700)),
         ]),
@@ -193,7 +193,7 @@ class _ClaimFeedback extends StatelessWidget {
           const SizedBox(height: 8),
           ...feedback.violations.map((item) => ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.warning_amber),
+            leading: const Icon(Icons.warning),
             title: Text(item.message),
             subtitle: Text('${item.ruleCode} · ${item.severity}'),
           )),

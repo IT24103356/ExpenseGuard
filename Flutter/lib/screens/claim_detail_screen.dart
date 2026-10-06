@@ -79,14 +79,14 @@ class _ClaimDetailScreenState extends ConsumerState<ClaimDetailScreen> {
             onPressed: () => context.go(int.tryParse(widget.claimId) == null
                 ? '/policy-guidance'
                 : '/policy-guidance?claimId=${Uri.encodeQueryComponent(widget.claimId)}'),
-            icon: const Icon(Icons.policy_outlined),
+            icon: const Icon(Icons.assignment),
             label: const Text('Review compliance and revise'),
           ),
           const SizedBox(height: 8),
           if (d['status'] == 'PAID')
             ElevatedButton.icon(
               onPressed: () => context.go('/payment/${d['id']}'),
-              icon: const Icon(Icons.receipt_long),
+              icon: const Icon(Icons.receipt),
               label: const Text('View Payment'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             ),
@@ -125,8 +125,8 @@ class _StepRow extends StatelessWidget {
     final icon = switch (status) {
       'COMPLETED' => Icons.check_circle,
       'FAILED' => Icons.cancel,
-      'WAITING_FOR_HUMAN' => Icons.pause_circle,
-      _ => Icons.radio_button_unchecked,
+      'WAITING_FOR_HUMAN' => Icons.hourglass_empty,
+      _ => Icons.trip_origin,
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

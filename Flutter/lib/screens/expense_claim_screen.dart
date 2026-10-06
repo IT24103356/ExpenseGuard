@@ -268,7 +268,7 @@ class _StatusBanner extends StatelessWidget {
   final String status;
   @override
   Widget build(BuildContext context) => Card(child: ListTile(
-    leading: const Icon(Icons.info_outline), title: Text(status),
+    leading: const Icon(Icons.info), title: Text(status),
     subtitle: Text(status == 'NeedsCorrection' ? 'Update the claim and receipt, then resubmit.' : 'Current workflow status'),
   ));
 }

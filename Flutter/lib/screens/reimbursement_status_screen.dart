@@ -82,18 +82,18 @@ class _ReimbursementStatusScreenState extends ConsumerState<ReimbursementStatusS
                   const SizedBox(height: 16),
                   if (d['paymentReference'] != null)
                     _InfoRow(icon: Icons.receipt, label: 'Payment Ref', value: d['paymentReference']),
-                  _InfoRow(icon: Icons.person_outline, label: 'Employee', value: d['employeeId']),
-                  _InfoRow(icon: Icons.business_outlined, label: 'Department', value: d['departmentId']),
-                  _InfoRow(icon: Icons.calendar_today_outlined, label: 'Requested', value: _formatDate(d['requestedAt'])),
+                  _InfoRow(icon: Icons.person, label: 'Employee', value: d['employeeId']),
+                  _InfoRow(icon: Icons.business, label: 'Department', value: d['departmentId']),
+                  _InfoRow(icon: Icons.calendar_today, label: 'Requested', value: _formatDate(d['requestedAt'])),
                   if (d['completedAt'] != null)
-                    _InfoRow(icon: Icons.check_circle_outline, label: 'Completed', value: _formatDate(d['completedAt'])),
+                    _InfoRow(icon: Icons.check_circle, label: 'Completed', value: _formatDate(d['completedAt'])),
                   if (d['failureReason'] != null) ...[
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: Colors.red.shade900.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade700.withValues(alpha: 0.4))),
                       child: Row(children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade400, size: 18),
+                        Icon(Icons.error, color: Colors.red.shade400, size: 18),
                         const SizedBox(width: 8),
                         Expanded(child: Text(d['failureReason'], style: TextStyle(color: Colors.red.shade300, fontSize: 13))),
                       ]),
@@ -105,7 +105,7 @@ class _ReimbursementStatusScreenState extends ConsumerState<ReimbursementStatusS
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: Colors.blue.shade900.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade700.withValues(alpha: 0.4))),
                       child: Row(children: [
-                        Icon(Icons.info_outline, color: Colors.blue.shade400, size: 18),
+                        Icon(Icons.info, color: Colors.blue.shade400, size: 18),
                         const SizedBox(width: 8),
                         const Expanded(child: Text('Insufficient budget — Finance team review required', style: TextStyle(fontSize: 13))),
                       ]),
@@ -220,9 +220,9 @@ class _StepRow extends StatelessWidget {
     final icon = switch (status) {
       'COMPLETED' => const Icon(Icons.check_circle, color: Colors.green, size: 18),
       'FAILED' => const Icon(Icons.cancel, color: Colors.red, size: 18),
-      'WAITING_FOR_HUMAN' => const Icon(Icons.pause_circle, color: Colors.orange, size: 18),
+      'WAITING_FOR_HUMAN' => const Icon(Icons.hourglass_empty, color: Colors.orange, size: 18),
       'IN_PROGRESS' => const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-      _ => Icon(Icons.radio_button_unchecked, color: Colors.grey.shade600, size: 18),
+      _ => Icon(Icons.trip_origin, color: Colors.grey.shade600, size: 18),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),

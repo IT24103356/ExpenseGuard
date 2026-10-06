@@ -52,7 +52,7 @@ class _PaymentStatusScreenState extends ConsumerState<PaymentStatusScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(children: [
-                Icon(isPaid ? Icons.check_circle : Icons.error_outline,
+                Icon(isPaid ? Icons.check_circle : Icons.error,
                     size: 72, color: isPaid ? Colors.green : Colors.red),
                 const SizedBox(height: 16),
                 Text(isPaid ? 'Payment Completed' : 'Payment ${d['status']}',

@@ -41,7 +41,7 @@ class MyClaimsScreen extends ConsumerWidget {
 
   Widget _buildEmpty() => Center(
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade600),
+      Icon(Icons.receipt, size: 64, color: Colors.grey.shade600),
       const SizedBox(height: 16),
       Text('No claims found', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
     ]),
@@ -75,7 +75,7 @@ class _ClaimCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Row(children: [
-              Icon(Icons.business_outlined, size: 14, color: Colors.grey.shade500),
+              Icon(Icons.business, size: 14, color: Colors.grey.shade500),
               const SizedBox(width: 4),
               Text('${claim['departmentId'] ?? ''}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
               const Spacer(),

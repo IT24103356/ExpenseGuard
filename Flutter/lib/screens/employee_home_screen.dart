@@ -36,9 +36,9 @@ class _EmployeeHomeScreenState extends ConsumerState<EmployeeHomeScreen> {
         selectedIndex: index,
         onDestinationSelected: (value) => setState(() => index = value),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Claims'),
-          NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), label: 'Requests'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+          NavigationDestination(icon: Icon(Icons.receipt), label: 'Claims'),
+          NavigationDestination(icon: Icon(Icons.shopping_cart), label: 'Requests'),
+          NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -77,7 +77,7 @@ class _ClaimsTab extends ConsumerWidget {
           loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
           error: (error, _) => SliverFillRemaining(child: _ErrorState(error: error, onRetry: () => ref.invalidate(claimsProvider))),
           data: (items) => items.isEmpty
-            ? const SliverFillRemaining(child: _EmptyState(icon: Icons.receipt_long, text: 'No claims match your filters.'))
+            ? const SliverFillRemaining(child: _EmptyState(icon: Icons.receipt, text: 'No claims match your filters.'))
             : SliverList.builder(itemCount: items.length, itemBuilder: (context, i) => _ClaimTile(claim: items[i])),
         ),
       ]),
@@ -108,7 +108,7 @@ class _RequestsTab extends ConsumerWidget {
     loading: () => const Center(child: CircularProgressIndicator()),
     error: (error, _) => _ErrorState(error: error, onRetry: () => ref.invalidate(purchaseRequestsProvider)),
     data: (items) => items.isEmpty
-      ? const _EmptyState(icon: Icons.shopping_cart_outlined, text: 'No purchase requests yet.')
+      ? const _EmptyState(icon: Icons.shopping_cart, text: 'No purchase requests yet.')
       : RefreshIndicator(
           onRefresh: () => ref.refresh(purchaseRequestsProvider.future),
           child: ListView.builder(itemCount: items.length, itemBuilder: (context, i) {
@@ -135,7 +135,7 @@ class _ProfileTab extends ConsumerWidget {
       Center(child: Text(profile.fullName, style: Theme.of(context).textTheme.headlineSmall)),
       Center(child: Text(profile.designation ?? 'Employee')),
       const SizedBox(height: 20),
-      Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: Text(profile.email))),
+      Card(child: ListTile(leading: const Icon(Icons.email), title: Text(profile.email))),
     ]),
   );
 }
@@ -148,7 +148,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) => Center(child: Padding(
     padding: const EdgeInsets.all(24),
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(Icons.error_outline, size: 48), const SizedBox(height: 8),
+      const Icon(Icons.error, size: 48), const SizedBox(height: 8),
       Text(error.toString(), textAlign: TextAlign.center), const SizedBox(height: 12),
       FilledButton.tonal(onPressed: onRetry, child: const Text('Try again')),
     ]),

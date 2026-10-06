@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../auth/auth_provider.dart';
+import '../widgets/expense_guard_logo.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -11,7 +12,11 @@ class HomeScreen extends ConsumerWidget {
     final session = ref.watch(authProvider).value;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ExpenseGuard', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Row(children: [
+          ExpenseGuardLogo(size: 32),
+          SizedBox(width: 10),
+          Text('ExpenseGuard', style: TextStyle(fontWeight: FontWeight.bold)),
+        ]),
         actions: [
           IconButton(
             tooltip: 'Sign out',
@@ -34,19 +39,19 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           _HomeButton(
-            icon: Icons.receipt_long,
+            icon: Icons.receipt,
             title: 'My claims',
             subtitle: 'Track reimbursements and payments',
             onTap: () => context.go('/claims'),
           ),
           _HomeButton(
-            icon: Icons.add_box_outlined,
+            icon: Icons.note_add,
             title: 'Expense intake',
             subtitle: 'Draft and submit claims or purchase requests',
             onTap: () => context.go('/intake'),
           ),
           _HomeButton(
-            icon: Icons.policy_outlined,
+            icon: Icons.assignment,
             title: 'Policy guidance',
             subtitle: 'See AI and policy findings before you resubmit',
             onTap: () => context.go('/policy-guidance'),
