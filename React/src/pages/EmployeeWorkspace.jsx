@@ -5,9 +5,9 @@ import { FiClipboard, FiFileText, FiUser } from 'react-icons/fi';
 import {
   createClaim, createPurchaseRequest, deleteClaim, deletePurchaseRequest,
   getMyProfile, getPurchaseRequests, searchClaims, submitClaim, submitPurchaseRequest,
-  updatePurchaseRequest,
+  updatePurchaseRequest, uploadReceipt,
 } from '../services/api';
-import { ApprovalProgress, formatDesignation } from '../components/Shared';
+import { ApprovalProgress, apiErrorMessage, formatDesignation } from '../components/Shared';
 
 const emptyClaim = {
   amount: '', category: '', description: '', currency: 'LKR', vendor: '',
@@ -125,6 +125,7 @@ function ClaimsPanel() {
   const client = useQueryClient();
   const [filters, setFilters] = useState({ status: '', category: '', from: '', to: '' });
   const [form, setForm] = useState(emptyClaim);
+  const [receiptFile, setReceiptFile] = useState(null);
   const params = Object.fromEntries(Object.entries({
     ...filters,
     status: filters.status ? claimStatuses.indexOf(filters.status) : '',
@@ -132,16 +133,27 @@ function ClaimsPanel() {
   const claims = useQuery({ queryKey: ['claims', params], queryFn: () => searchClaims(params) });
   const requests = useQuery({ queryKey: ['purchase-requests'], queryFn: getPurchaseRequests });
   const refresh = () => client.invalidateQueries({ queryKey: ['claims'] });
-  const create = useMutation({ mutationFn: createClaim, onSuccess: () => { setForm(emptyClaim); refresh(); } });
+  const create = useMutation({
+    mutationFn: async ({ payload, file }) => {
+      const claim = await createClaim(payload);
+      await uploadReceipt(claim.expenseClaimId, file);
+      return claim;
+    },
+    onSuccess: () => { setForm(emptyClaim); setReceiptFile(null); refresh(); },
+  });
   const submit = useMutation({ mutationFn: submitClaim, onSuccess: refresh });
   const remove = useMutation({ mutationFn: deleteClaim, onSuccess: refresh });
   const save = event => {
     event.preventDefault();
+    if (!receiptFile) return;
     create.mutate({
-      ...form, amount: Number(form.amount), purchaseDate: form.purchaseDate || null,
-      vendor: form.vendor || null,
-      purchaseRequestId: form.flow === 'PrePurchase' ? Number(form.purchaseRequestId) : null,
-      flow: form.flow === 'PrePurchase' ? 1 : 0, version: 0,
+      payload: {
+        ...form, amount: Number(form.amount), purchaseDate: form.purchaseDate || null,
+        vendor: form.vendor || null,
+        purchaseRequestId: form.flow === 'PrePurchase' ? Number(form.purchaseRequestId) : null,
+        flow: form.flow === 'PrePurchase' ? 1 : 0, version: 0,
+      },
+      file: receiptFile,
     });
   };
   return <>
@@ -162,8 +174,14 @@ function ClaimsPanel() {
           <select className="form-control" required value={form.purchaseRequestId} onChange={e => setForm({ ...form, purchaseRequestId: e.target.value })}>
             <option value="">Select request</option>{requests.data?.filter(x => enumLabel(x.status, requestStatuses) === 'Approved').map(x => <option key={x.purchaseRequestId} value={x.purchaseRequestId}>{x.description}</option>)}
           </select></label>}
-        {create.isError && <div className="alert alert-danger">{create.error.message}</div>}
-        <button className="btn btn-primary" disabled={create.isPending}>Save draft</button>
+        <label className="form-group">
+          <span className="form-label">Receipt photo</span>
+          <input key={receiptFile?.name ?? 'no-receipt'} className="form-control" type="file" accept="image/jpeg,image/png,image/*,.pdf,application/pdf" required
+            aria-label="Receipt photo" onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
+          <small className="employee-secondary">{receiptFile ? receiptFile.name : 'JPEG, PNG, or PDF. Required before you can submit.'}</small>
+        </label>
+        {create.isError && <div className="alert alert-danger">{apiErrorMessage(create.error, 'Could not save the draft.')}</div>}
+        <button className="btn btn-primary" disabled={create.isPending}>{create.isPending ? 'Saving draft…' : 'Save draft'}</button>
       </form>
       <div className="table-wrapper">
         <div className="table-header"><h3>Claims</h3></div>
@@ -173,6 +191,8 @@ function ClaimsPanel() {
           <input aria-label="From date" type="date" value={filters.from} onChange={e => setFilters({ ...filters, from: e.target.value })} />
           <input aria-label="To date" type="date" value={filters.to} onChange={e => setFilters({ ...filters, to: e.target.value })} />
         </div>
+        {submit.isError && <div className="alert alert-danger">{apiErrorMessage(submit.error, 'Submit failed. Add a receipt photo, then try again.')}</div>}
+        {submit.isPending && <div className="alert alert-info">Submitting and reviewing the claim. This can take up to a minute.</div>}
         <QueryState query={claims} empty="No claims match these filters.">
           {rows => <table><thead><tr><th>Claim</th><th>Amount</th><th>Status</th><th>Approval</th><th>Actions</th></tr></thead>
             <tbody>{rows.map(claim => <tr key={claim.expenseClaimId}>
@@ -181,8 +201,8 @@ function ClaimsPanel() {
               <td><span className={statusClass(enumLabel(claim.status, claimStatuses))}>{enumLabel(claim.status, claimStatuses)}</span></td>
               <td><ApprovalProgress compact steps={claim.approvalSteps} currentRole={claim.currentRequiredRole} /></td>
               <td className="employee-actions">{enumLabel(claim.status, claimStatuses) === 'Draft' && <>
-                <button className="btn btn-primary btn-sm" onClick={() => submit.mutate(claim.expenseClaimId)}>Submit</button>
-                <button className="btn btn-danger btn-sm" onClick={() => remove.mutate(claim.expenseClaimId)}>Delete</button>
+                <button className="btn btn-primary btn-sm" type="button" disabled={submit.isPending} onClick={() => submit.mutate(claim.expenseClaimId)}>{submit.isPending ? 'Submitting…' : 'Submit'}</button>
+                <button className="btn btn-danger btn-sm" type="button" onClick={() => remove.mutate(claim.expenseClaimId)}>Delete</button>
               </>}</td>
             </tr>)}</tbody></table>}
         </QueryState>

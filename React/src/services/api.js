@@ -46,7 +46,7 @@ export const searchClaims = (params) => data(api.get('/claims', { params }));
 export const getClaim = (id) => data(api.get(`/claims/${id}`));
 export const createClaim = (body) => data(api.post('/claims', body));
 export const updateClaim = (id, body) => data(api.put(`/claims/${id}`, body));
-export const submitClaim = (id) => data(api.post(`/claims/${id}/submit`));
+export const submitClaim = (id) => data(api.post(`/claims/${id}/submit`, null, { timeout: 90_000 }));
 export const resubmitClaim = (id, reason) => data(api.post(`/claims/${id}/resubmit`, jsonString(reason), {
   headers: { 'Content-Type': 'application/json' },
 }));

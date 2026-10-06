@@ -39,7 +39,7 @@ builder.Services.AddHttpClient<IClaimReviewClient, LangGraphClaimReviewClient>(c
     if (string.IsNullOrWhiteSpace(baseUrl))
         baseUrl = "http://127.0.0.1:8088";
     client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
-    client.Timeout = TimeSpan.FromSeconds(60);
+    client.Timeout = TimeSpan.FromSeconds(12);
 });
 builder.Services.AddScoped<IClaimService, ClaimService>();
 builder.Services.AddScoped<IRequestHistoryService, RequestHistoryService>();

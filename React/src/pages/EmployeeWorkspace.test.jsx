@@ -9,7 +9,7 @@ vi.mock('../services/api', () => ({
   createClaim: vi.fn(), createPurchaseRequest: vi.fn(), deleteClaim: vi.fn(),
   deletePurchaseRequest: vi.fn(), getMyProfile: vi.fn(),
   getPurchaseRequests: vi.fn(), searchClaims: vi.fn(), submitClaim: vi.fn(),
-  submitPurchaseRequest: vi.fn(), updatePurchaseRequest: vi.fn(),
+  submitPurchaseRequest: vi.fn(), updatePurchaseRequest: vi.fn(), uploadReceipt: vi.fn(),
 }));
 
 function renderWorkspace() {
@@ -61,5 +61,19 @@ describe('EmployeeWorkspace', () => {
     await waitFor(() => expect(api.updatePurchaseRequest).toHaveBeenCalledWith(4, expect.objectContaining({
       description: 'Team training software', vendor: 'Disney', version: 2,
     })));
+  });
+
+  it('uploads a receipt when saving a new claim draft', async () => {
+    api.createClaim.mockResolvedValue({ expenseClaimId: 9 });
+    api.uploadReceipt.mockResolvedValue({ receiptId: 3 });
+    renderWorkspace();
+    fireEvent.change(screen.getByLabelText(/^category$/i), { target: { value: 'Meals' } });
+    fireEvent.change(screen.getByLabelText(/^description$/i), { target: { value: 'Team lunch' } });
+    fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '2500' } });
+    const file = new File(['receipt'], 'lunch.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByLabelText(/receipt photo/i), { target: { files: [file] } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Save draft' }).closest('form'));
+    await waitFor(() => expect(api.createClaim).toHaveBeenCalled());
+    await waitFor(() => expect(api.uploadReceipt).toHaveBeenCalledWith(9, file));
   });
 });

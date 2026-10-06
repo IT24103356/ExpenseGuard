@@ -16,8 +16,8 @@ export function apiErrorMessage(error, fallback = 'Something went wrong.') {
       : 'Your session expired. Sign in again.';
   }
   if (status === 403) return 'You do not have permission to perform this action.';
-  if (status === 409) return error.response?.data?.detail || error.response?.data?.error || 'The record changed. Refresh and try again.';
-  return error?.response?.data?.detail || error?.response?.data?.error || fallback;
+  if (status === 409) return error.response?.data?.detail || error.response?.data?.error || error.response?.data?.title || 'The record changed. Refresh and try again.';
+  return error?.response?.data?.detail || error.response?.data?.error || error.response?.data?.title || fallback;
 }
 
 export function ErrorState({ error, onRetry }) {
